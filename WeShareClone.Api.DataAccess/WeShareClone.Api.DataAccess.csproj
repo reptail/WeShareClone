@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <EmbeddedResource Include="Sql/**/*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WeShareClone.Api.Domain\WeShareClone.Api.Domain.csproj" />
   </ItemGroup>
 
