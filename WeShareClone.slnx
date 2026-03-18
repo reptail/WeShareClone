@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Backend/">
+    <Project Path="WeShareClone.Api/WeShareClone.Api.csproj" />
+    <Project Path="WeShareClone.Api.Domain/WeShareClone.Api.Domain.csproj" />
+    <Project Path="WeShareClone.Api.DataAccess/WeShareClone.Api.DataAccess.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,15 @@
+[*]
+end_of_line = crlf
+charset = utf-8
+indent_style = space
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+indent_size = 4
+
+[*.{json,xml,csproj,slnx}]
+indent_size = 2
+
+[*.sql]
+indent_size = 4

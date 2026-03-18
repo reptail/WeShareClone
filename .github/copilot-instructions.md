@@ -11,7 +11,13 @@ WeShareClone is a .NET/Visual Studio application that replicates the deprecated 
 - **Branching:** `master` is the stable branch; active development happens on `dev`
 
 ## Repository Structure
-- `_SqlScripts/` — All database schema and migration scripts live here. SQL changes go in this folder, not inline in application code.
+- `_SqlScripts/` — All database schema and migration scripts, named `NNN_Description.sql`. Always add new numbered scripts; never modify existing ones.
+- `WeShareClone.Api/` — ASP.NET Core REST API (controllers-based, Swashbuckle/Swagger)
+
+## Build
+```
+dotnet build
+```
 
 ## Database Conventions
 - Schema is managed via sequential scripts in `_SqlScripts/`, named `NNN_Description.sql` (e.g. `001_InitialSchema.sql`). Always add a new numbered script — never modify an existing one.
@@ -24,3 +30,25 @@ WeShareClone is a .NET/Visual Studio application that replicates the deprecated 
 ## Environment
 - `.env` files are gitignored. Secrets and connection strings must not be committed.
 - VS Code settings (`.vscode/settings.json`, `tasks.json`, `launch.json`, `extensions.json`) are tracked; other `.vscode/` files are ignored.
+
+## File Conventions
+- All files use **CRLF** line endings.
+- All files are saved as **UTF-8 without BOM**.
+- `.gitkeep` files are used to track empty folders. Remove `.gitkeep` as soon as any other file is added to the same folder.
+
+## C# Formatting
+- Use C# 14 `extension` block syntax for extension members (not traditional `this` parameter methods).
+- For expression-bodied members, place the `=>` arrow on a new line when the expression spans multiple lines.
+- Always use named arguments when calling constructors with multiple parameters.
+- Place the closing `);` on a new line at the same indentation level as the `=>` arrow:
+  ```csharp
+  // single-line: arrow inline
+  public string Name() => "value";
+
+  // multi-line: arrow on new line, named args, closing ); aligned with =>
+  public User ToDomain()
+      => new(
+          Id: db.Id,
+          Name: db.Name
+      );
+  ```
