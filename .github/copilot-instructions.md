@@ -14,7 +14,11 @@ WeShareClone is a .NET/Visual Studio application that replicates the deprecated 
 - `_SqlScripts/` — All database schema and migration scripts live here. SQL changes go in this folder, not inline in application code.
 
 ## Database Conventions
-- Database schema is managed via scripts in `_SqlScripts/`. When adding or altering tables, add a new script file rather than modifying existing ones.
+- Schema is managed via sequential scripts in `_SqlScripts/`, named `NNN_Description.sql` (e.g. `001_InitialSchema.sql`). Always add a new numbered script — never modify an existing one.
+- `DATETIME2(3)` is the standard for all timestamp fields (millisecond precision).
+- Currency fields use `NCHAR(3)` (ISO 4217 codes: DKK, EUR, USD, etc.).
+- Monetary value fields use `DECIMAL(18,2)`.
+- All constraints (defaults, foreign keys) are explicitly named following the pattern `DF_Table_Column` / `FK_Table_Column`.
 - SQL Server `.mdf`/`.ldf`/`.ndf` files are gitignored; only scripts are committed.
 
 ## Environment
