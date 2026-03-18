@@ -38,6 +38,7 @@ dotnet build
 
 ## C# Formatting
 - Use C# 14 `extension` block syntax for extension members (not traditional `this` parameter methods).
+- Never use `var` — always declare explicit types.
 - For expression-bodied members, place the `=>` arrow on a new line when the expression spans multiple lines.
 - Always use named arguments when calling constructors with multiple parameters.
 - Place the closing `);` on a new line at the same indentation level as the `=>` arrow:
