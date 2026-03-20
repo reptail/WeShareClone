@@ -47,10 +47,10 @@ public class EntryRepository(Func<SqlConnection> connectionFactory) : IEntryRepo
         return row.ToDomain();
     }
 
-    public async Task<Entry> UpdateAsync(Entry entry)
+    public async Task<Entry?> UpdateAsync(Entry entry)
     {
         using SqlConnection connection = connectionFactory();
-        DbEntry row = await connection.QuerySingleAsync<DbEntry>(
+        DbEntry? row = await connection.QuerySingleOrDefaultAsync<DbEntry>(
             sql: SqlScripts.UpdateEntry,
             param: new
             {
@@ -60,15 +60,16 @@ public class EntryRepository(Func<SqlConnection> connectionFactory) : IEntryRepo
                 entry.Currency,
             }
         );
-        return row.ToDomain();
+        return row?.ToDomain();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
         using SqlConnection connection = connectionFactory();
-        await connection.ExecuteAsync(
+        int affected = await connection.ExecuteAsync(
             sql: SqlScripts.DeleteEntry,
             param: new { Id = id }
         );
+        return affected > 0;
     }
 }

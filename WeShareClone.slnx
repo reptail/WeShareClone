@@ -3,5 +3,6 @@
     <Project Path="WeShareClone.Api/WeShareClone.Api.csproj" />
     <Project Path="WeShareClone.Api.Domain/WeShareClone.Api.Domain.csproj" />
     <Project Path="WeShareClone.Api.DataAccess/WeShareClone.Api.DataAccess.csproj" />
+    <Project Path="WeShareClone.Api.Dto/WeShareClone.Api.Dto.csproj" />
   </Folder>
 </Solution>

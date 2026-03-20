@@ -45,10 +45,10 @@ public class SettlementRepository(Func<SqlConnection> connectionFactory) : ISett
         return row.ToDomain();
     }
 
-    public async Task<Settlement> UpdateAsync(Settlement settlement)
+    public async Task<Settlement?> UpdateAsync(Settlement settlement)
     {
         using SqlConnection connection = connectionFactory();
-        DbSettlement row = await connection.QuerySingleAsync<DbSettlement>(
+        DbSettlement? row = await connection.QuerySingleOrDefaultAsync<DbSettlement>(
             sql: SqlScripts.UpdateSettlement,
             param: new
             {
@@ -58,16 +58,17 @@ public class SettlementRepository(Func<SqlConnection> connectionFactory) : ISett
                 settlement.Currency,
             }
         );
-        return row.ToDomain();
+        return row?.ToDomain();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
         using SqlConnection connection = connectionFactory();
-        await connection.ExecuteAsync(
+        int affected = await connection.ExecuteAsync(
             sql: SqlScripts.DeleteSettlement,
             param: new { Id = id }
         );
+        return affected > 0;
     }
 
     public async Task AddUserAsync(int settlementId, int userId)
