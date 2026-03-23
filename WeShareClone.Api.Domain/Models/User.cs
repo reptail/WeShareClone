@@ -4,6 +4,6 @@ public record User(
     int Id,
     string Email,
     string Name,
-    string? Thumbnail,
+    EUserRole Role,
     DateTime JoinedAtUtc,
     bool IsDeleted);

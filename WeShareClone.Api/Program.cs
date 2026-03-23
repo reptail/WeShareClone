@@ -1,6 +1,11 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
+using Microsoft.IdentityModel.Tokens;
 using WeShareClone.Api.DataAccess.Repositories;
 using WeShareClone.Api.Domain.Repositories;
+using WeShareClone.Api.Domain.Services;
+using WeShareClone.Api.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -21,17 +26,40 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+            ValidAudience = builder.Configuration["JwtSettings:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]!)
+            ),
+        };
+    });
+
 builder.Services.AddScoped<Func<SqlConnection>>(
     sp => () => new SqlConnection(builder.Configuration.GetConnectionString("WeShareClone"))
 );
 builder.Services.AddScoped<ISettlementRepository, SettlementRepository>();
 builder.Services.AddScoped<IEntryRepository, EntryRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IPendingSignupRepository, PendingSignupRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 WebApplication app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI(options => options.EnableTryItOutByDefault());
 
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

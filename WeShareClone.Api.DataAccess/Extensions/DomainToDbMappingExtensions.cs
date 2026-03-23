@@ -13,7 +13,7 @@ public static class DomainToDbMappingExtensions
                 Id = domain.Id,
                 Email = domain.Email,
                 Name = domain.Name,
-                Thumbnail = domain.Thumbnail,
+                Role = domain.Role,
                 JoinedAtUtc = domain.JoinedAtUtc,
                 IsDeleted = domain.IsDeleted,
             };

@@ -12,7 +12,7 @@ public static class DbToDomainMappingExtensions
                 Id: db.Id,
                 Email: db.Email,
                 Name: db.Name,
-                Thumbnail: db.Thumbnail,
+                Role: db.Role,
                 JoinedAtUtc: db.JoinedAtUtc,
                 IsDeleted: db.IsDeleted
             );
@@ -42,6 +42,41 @@ public static class DbToDomainMappingExtensions
                 Currency: db.Currency,
                 AddedBy: db.AddedBy,
                 AddedAtUtc: db.AddedAtUtc
+            );
+    }
+
+    extension(DbVerificationCode db)
+    {
+        public VerificationCode ToDomain()
+            => new(
+                Id: db.Id,
+                Email: db.Email,
+                CodeHash: db.CodeHash,
+                CreatedAtUtc: db.CreatedAtUtc,
+                ExpiresAtUtc: db.ExpiresAtUtc
+            );
+    }
+
+    extension(DbRefreshToken db)
+    {
+        public RefreshToken ToDomain()
+            => new(
+                Id: db.Id,
+                UserId: db.UserId,
+                Token: db.Token,
+                CreatedAtUtc: db.CreatedAtUtc,
+                ExpiresAtUtc: db.ExpiresAtUtc
+            );
+    }
+
+    extension(DbPendingSignup db)
+    {
+        public PendingSignup ToDomain()
+            => new(
+                Id: db.Id,
+                Email: db.Email,
+                Name: db.Name,
+                CreatedAtUtc: db.CreatedAtUtc
             );
     }
 }

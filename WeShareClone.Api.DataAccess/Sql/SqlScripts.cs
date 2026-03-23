@@ -2,10 +2,6 @@ using System.Reflection;
 
 namespace WeShareClone.Api.DataAccess.Sql;
 
-/// <summary>
-/// Provides access to embedded SQL scripts in the DataAccess assembly.
-/// Scripts are resolved by filename (without extension) and loaded on demand.
-/// </summary>
 public static class SqlScripts
 {
     private static readonly Dictionary<string, string> _scripts;
@@ -23,19 +19,34 @@ public static class SqlScripts
             );
     }
 
-    public static string GetAllSettlements         => Load(nameof(GetAllSettlements));
-    public static string GetSettlementById         => Load(nameof(GetSettlementById));
-    public static string CreateSettlement          => Load(nameof(CreateSettlement));
-    public static string UpdateSettlement          => Load(nameof(UpdateSettlement));
-    public static string DeleteSettlement          => Load(nameof(DeleteSettlement));
-    public static string AddUserToSettlement       => Load(nameof(AddUserToSettlement));
-    public static string RemoveUserFromSettlement  => Load(nameof(RemoveUserFromSettlement));
+    public static string GetAllSettlements        => Load(nameof(GetAllSettlements));
+    public static string GetSettlementById        => Load(nameof(GetSettlementById));
+    public static string CreateSettlement         => Load(nameof(CreateSettlement));
+    public static string UpdateSettlement         => Load(nameof(UpdateSettlement));
+    public static string DeleteSettlement         => Load(nameof(DeleteSettlement));
+    public static string AddUserToSettlement      => Load(nameof(AddUserToSettlement));
+    public static string RemoveUserFromSettlement => Load(nameof(RemoveUserFromSettlement));
 
-    public static string GetEntriesBySettlementId  => Load(nameof(GetEntriesBySettlementId));
-    public static string GetEntryById              => Load(nameof(GetEntryById));
-    public static string CreateEntry               => Load(nameof(CreateEntry));
-    public static string UpdateEntry               => Load(nameof(UpdateEntry));
-    public static string DeleteEntry               => Load(nameof(DeleteEntry));
+    public static string GetEntriesBySettlementId => Load(nameof(GetEntriesBySettlementId));
+    public static string GetEntryById             => Load(nameof(GetEntryById));
+    public static string CreateEntry              => Load(nameof(CreateEntry));
+    public static string UpdateEntry              => Load(nameof(UpdateEntry));
+    public static string DeleteEntry              => Load(nameof(DeleteEntry));
+
+    public static string GetUserByEmail                => Load(nameof(GetUserByEmail));
+    public static string GetUserById                   => Load(nameof(GetUserById));
+    public static string CreateUser                    => Load(nameof(CreateUser));
+
+    public static string UpsertVerificationCode        => Load(nameof(UpsertVerificationCode));
+    public static string GetVerificationCodeByEmail    => Load(nameof(GetVerificationCodeByEmail));
+    public static string DeleteVerificationCodeByEmail => Load(nameof(DeleteVerificationCodeByEmail));
+    public static string CreateRefreshToken            => Load(nameof(CreateRefreshToken));
+    public static string GetRefreshTokenByToken        => Load(nameof(GetRefreshTokenByToken));
+    public static string DeleteRefreshTokenByToken     => Load(nameof(DeleteRefreshTokenByToken));
+
+    public static string GetPendingSignupByEmail       => Load(nameof(GetPendingSignupByEmail));
+    public static string UpsertPendingSignup           => Load(nameof(UpsertPendingSignup));
+    public static string DeletePendingSignupByEmail    => Load(nameof(DeletePendingSignupByEmail));
 
     private static string Load(string key)
     {
