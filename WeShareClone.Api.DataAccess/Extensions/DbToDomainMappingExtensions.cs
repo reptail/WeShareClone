@@ -79,4 +79,30 @@ public static class DbToDomainMappingExtensions
                 CreatedAtUtc: db.CreatedAtUtc
             );
     }
+
+    extension(DbPasskeyCredential db)
+    {
+        public PasskeyCredential ToDomain()
+            => new(
+                Id: db.Id,
+                UserId: db.UserId,
+                CredentialId: db.CredentialId,
+                PublicKey: db.PublicKey,
+                SignCount: db.SignCount,
+                AaGuid: db.AaGuid,
+                CreatedAtUtc: db.CreatedAtUtc
+            );
+    }
+
+    extension(DbPasskeyChallenge db)
+    {
+        public PasskeyChallenge ToDomain()
+            => new(
+                Id: db.Id,
+                Email: db.Email,
+                ChallengeType: db.ChallengeType,
+                OptionsJson: db.OptionsJson,
+                ExpiresAtUtc: db.ExpiresAtUtc
+            );
+    }
 }

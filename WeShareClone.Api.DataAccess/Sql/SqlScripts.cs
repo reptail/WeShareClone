@@ -48,6 +48,15 @@ public static class SqlScripts
     public static string UpsertPendingSignup           => Load(nameof(UpsertPendingSignup));
     public static string DeletePendingSignupByEmail    => Load(nameof(DeletePendingSignupByEmail));
 
+    public static string GetPasskeyCredentialsByUserId       => Load(nameof(GetPasskeyCredentialsByUserId));
+    public static string GetPasskeyCredentialByCredentialId  => Load(nameof(GetPasskeyCredentialByCredentialId));
+    public static string CreatePasskeyCredential             => Load(nameof(CreatePasskeyCredential));
+    public static string UpdatePasskeySignCount              => Load(nameof(UpdatePasskeySignCount));
+    public static string DeletePasskeyCredentialById         => Load(nameof(DeletePasskeyCredentialById));
+    public static string GetPasskeyChallengeByEmailAndType   => Load(nameof(GetPasskeyChallengeByEmailAndType));
+    public static string UpsertPasskeyChallenge              => Load(nameof(UpsertPasskeyChallenge));
+    public static string DeletePasskeyChallengeByEmailAndType => Load(nameof(DeletePasskeyChallengeByEmailAndType));
+
     private static string Load(string key)
     {
         string resourceName = _scripts[key];

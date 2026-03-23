@@ -1,4 +1,5 @@
 using System.Text;
+using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
@@ -52,7 +53,13 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IPendingSignupRepository, PendingSignupRepository>();
+builder.Services.AddScoped<IPasskeyCredentialRepository, PasskeyCredentialRepository>();
+builder.Services.AddScoped<IPasskeyChallengeRepository, PasskeyChallengeRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasskeyService, PasskeyService>();
+
+builder.Services.Configure<Fido2Configuration>(builder.Configuration.GetSection("Fido2"));
+builder.Services.AddScoped<Fido2>();
 
 WebApplication app = builder.Build();
 
