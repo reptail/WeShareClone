@@ -33,23 +33,4 @@ dotnet build
 
 ## File Conventions
 - All files use **CRLF** line endings.
-- All files are saved as **UTF-8 without BOM**.
 - `.gitkeep` files are used to track empty folders. Remove `.gitkeep` as soon as any other file is added to the same folder.
-
-## C# Formatting
-- Use C# 14 `extension` block syntax for extension members (not traditional `this` parameter methods).
-- Never use `var` — always declare explicit types.
-- For expression-bodied members, place the `=>` arrow on a new line when the expression spans multiple lines.
-- Always use named arguments when calling constructors with multiple parameters.
-- Place the closing `);` on a new line at the same indentation level as the `=>` arrow:
-  ```csharp
-  // single-line: arrow inline
-  public string Name() => "value";
-
-  // multi-line: arrow on new line, named args, closing ); aligned with =>
-  public User ToDomain()
-      => new(
-          Id: db.Id,
-          Name: db.Name
-      );
-  ```
