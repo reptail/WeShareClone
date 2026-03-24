@@ -177,11 +177,11 @@ public class PasskeyService(
         return await IssueTokensAsync(user);
     }
 
-    public async Task<PasskeyCredential[]> GetCredentialsByUserIdAsync(int userId)
-        => await credentialRepository.GetByUserIdAsync(userId);
+    public Task<PasskeyCredential[]> GetCredentialsByUserIdAsync(int userId)
+        => credentialRepository.GetByUserIdAsync(userId);
 
-    public async Task DeleteCredentialAsync(int userId, int credentialId)
-        => await credentialRepository.DeleteByIdAsync(id: credentialId, userId: userId);
+    public Task DeleteCredentialAsync(int userId, int credentialId)
+        => credentialRepository.DeleteByIdAsync(id: credentialId, userId: userId);
 
     private async Task<AuthToken> IssueTokensAsync(User user)
     {

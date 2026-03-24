@@ -25,7 +25,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<CredentialCreateOptions>> BeginRegistration()
+    public async Task<ActionResult<CredentialCreateOptions>> BeginRegistrationAsync()
     {
         int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
         string email = User.FindFirst(JwtRegisteredClaimNames.Email)!.Value;
@@ -54,7 +54,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> CompleteRegistration([FromBody] AuthenticatorAttestationRawResponse attestationResponse)
+    public async Task<IActionResult> CompleteRegistrationAsync([FromBody] AuthenticatorAttestationRawResponse attestationResponse)
     {
         int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
         string email = User.FindFirst(JwtRegisteredClaimNames.Email)!.Value;
@@ -91,7 +91,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     [HttpPost("login/begin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<AssertionOptions>> BeginLogin([FromBody] PasskeyLoginBeginRequestDto dto)
+    public async Task<ActionResult<AssertionOptions>> BeginLoginAsync([FromBody] PasskeyLoginBeginRequestDto dto)
     {
         AssertionOptions? options = await passkeyService.BeginLoginAsync(dto.Email);
 
@@ -113,7 +113,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     [HttpPost("login/complete")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<AuthTokenDto>> CompleteLogin([FromBody] AuthenticatorAssertionRawResponse assertionResponse)
+    public async Task<ActionResult<AuthTokenDto>> CompleteLoginAsync([FromBody] AuthenticatorAssertionRawResponse assertionResponse)
     {
         AuthToken? token = await passkeyService.CompleteLoginAsync(assertionResponse);
 
@@ -135,7 +135,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<PasskeyCredentialDto[]>> GetCredentials()
+    public async Task<ActionResult<PasskeyCredentialDto[]>> GetCredentialsAsync()
     {
         int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
         PasskeyCredential[] credentials = await passkeyService.GetCredentialsByUserIdAsync(userId);
@@ -159,7 +159,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> DeleteCredential([FromRoute] int id)
+    public async Task<IActionResult> DeleteCredentialAsync([FromRoute] int id)
     {
         int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
         await passkeyService.DeleteCredentialAsync(userId: userId, credentialId: id);

@@ -164,15 +164,15 @@ public class AuthService(
         int expiryMinutes = int.Parse(configuration["JwtSettings:ExpiryMinutes"]!);
 
         SymmetricSecurityKey securityKey = new(Encoding.UTF8.GetBytes(key));
-        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
+        SigningCredentials credentials = new(key: securityKey, algorithm: SecurityAlgorithms.HmacSha256);
 
         Claim[] claims =
         [
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Name, user.Name),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim(type: JwtRegisteredClaimNames.Sub, value: user.Id.ToString()),
+            new Claim(type: JwtRegisteredClaimNames.Email, value: user.Email),
+            new Claim(type: JwtRegisteredClaimNames.Name, value: user.Name),
+            new Claim(type: JwtRegisteredClaimNames.Jti, value: Guid.NewGuid().ToString()),
+            new Claim(type: ClaimTypes.Role, value: user.Role.ToString()),
         ];
 
         DateTime expiresAtUtc = DateTime.UtcNow.AddMinutes(expiryMinutes);

@@ -19,7 +19,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// <response code="200">Request processed successfully.</response>
     [HttpPost("login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequestDto dto)
     {
         await authService.RequestLoginAsync(dto.Email);
         return Ok();
@@ -33,7 +33,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("verify")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<AuthTokenDto>> Verify([FromBody] VerifyRequestDto dto)
+    public async Task<ActionResult<AuthTokenDto>> VerifyAsync([FromBody] VerifyRequestDto dto)
     {
         AuthToken? token = await authService.VerifyCodeAsync(
             email: dto.Email,
@@ -62,7 +62,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("refresh")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<AuthTokenDto>> Refresh([FromBody] RefreshRequestDto dto)
+    public async Task<ActionResult<AuthTokenDto>> RefreshAsync([FromBody] RefreshRequestDto dto)
     {
         AuthToken? token = await authService.RefreshTokenAsync(dto.RefreshToken);
 
@@ -86,7 +86,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// <response code="200">Request processed successfully.</response>
     [HttpPost("signup")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Signup([FromBody] SignupRequestDto dto)
+    public async Task<IActionResult> SignupAsync([FromBody] SignupRequestDto dto)
     {
         await authService.RequestSignupAsync(
             email: dto.Email,
@@ -107,7 +107,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     [HttpPost("signup/verify")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<AuthTokenDto>> VerifySignup([FromBody] VerifyRequestDto dto)
+    public async Task<ActionResult<AuthTokenDto>> VerifySignupAsync([FromBody] VerifyRequestDto dto)
     {
         AuthToken? token = await authService.VerifySignupAsync(
             email: dto.Email,

@@ -18,7 +18,7 @@ public class SettlementsController(
     /// <response code="200">Settlements retrieved successfully.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<SettlementDto[]>> GetAll()
+    public async Task<ActionResult<SettlementDto[]>> GetAllAsync()
     {
         Settlement[] settlements = await settlementRepository.GetAllAsync();
         return Ok(settlements.Select(s => s.ToDto()).ToArray());
@@ -32,7 +32,7 @@ public class SettlementsController(
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<SettlementDto>> GetById(int id)
+    public async Task<ActionResult<SettlementDto>> GetByIdAsync(int id)
     {
         Settlement? settlement = await settlementRepository.GetByIdAsync(id);
         if (settlement is null)
@@ -46,11 +46,11 @@ public class SettlementsController(
     /// <response code="201">Settlement created successfully.</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<ActionResult<SettlementDto>> Create([FromBody] CreateSettlementDto dto)
+    public async Task<ActionResult<SettlementDto>> CreateAsync([FromBody] CreateSettlementDto dto)
     {
         Settlement created = await settlementRepository.CreateAsync(dto.ToDomain());
         return CreatedAtAction(
-            actionName: nameof(GetById),
+            actionName: nameof(GetByIdAsync),
             routeValues: new { id = created.Id },
             value: created.ToDto()
         );
@@ -65,7 +65,7 @@ public class SettlementsController(
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<SettlementDto>> Update(int id, [FromBody] UpdateSettlementDto dto)
+    public async Task<ActionResult<SettlementDto>> UpdateAsync(int id, [FromBody] UpdateSettlementDto dto)
     {
         Settlement? updated = await settlementRepository.UpdateAsync(dto.ToDomain(id));
         if (updated is null)
@@ -80,7 +80,7 @@ public class SettlementsController(
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id)
+    public async Task<IActionResult> DeleteAsync(int id)
     {
         bool deleted = await settlementRepository.DeleteAsync(id);
         if (!deleted)
@@ -94,7 +94,7 @@ public class SettlementsController(
     /// <response code="204">User added to settlement successfully.</response>
     [HttpPost("{id:int}/users")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> AddUser(int id, [FromBody] AddSettlementUserDto dto)
+    public async Task<IActionResult> AddUserAsync(int id, [FromBody] AddSettlementUserDto dto)
     {
         await settlementRepository.AddUserAsync(settlementId: id, userId: dto.UserId);
         return NoContent();
@@ -106,7 +106,7 @@ public class SettlementsController(
     /// <response code="204">User removed from settlement successfully.</response>
     [HttpDelete("{id:int}/users/{userId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> RemoveUser(int id, int userId)
+    public async Task<IActionResult> RemoveUserAsync(int id, int userId)
     {
         await settlementRepository.RemoveUserAsync(settlementId: id, userId: userId);
         return NoContent();
@@ -118,7 +118,7 @@ public class SettlementsController(
     /// <response code="200">Entries retrieved successfully.</response>
     [HttpGet("{id:int}/entries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<EntryDto[]>> GetEntries(int id)
+    public async Task<ActionResult<EntryDto[]>> GetEntriesAsync(int id)
     {
         Entry[] entries = await entryRepository.GetBySettlementIdAsync(id);
         return Ok(entries.Select(e => e.ToDto()).ToArray());
@@ -133,7 +133,7 @@ public class SettlementsController(
     [HttpGet("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<EntryDto>> GetEntry(int id, int entryId)
+    public async Task<ActionResult<EntryDto>> GetEntryAsync(int id, int entryId)
     {
         Entry? entry = await entryRepository.GetByIdAsync(entryId);
         if (entry is null || entry.SettlementId != id)
@@ -148,11 +148,11 @@ public class SettlementsController(
     /// <response code="201">Entry created successfully.</response>
     [HttpPost("{id:int}/entries")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<ActionResult<EntryDto>> CreateEntry(int id, [FromBody] CreateEntryDto dto)
+    public async Task<ActionResult<EntryDto>> CreateEntryAsync(int id, [FromBody] CreateEntryDto dto)
     {
         Entry created = await entryRepository.CreateAsync(dto.ToDomain(id));
         return CreatedAtAction(
-            actionName: nameof(GetEntry),
+            actionName: nameof(GetEntryAsync),
             routeValues: new { id = created.SettlementId, entryId = created.Id },
             value: created.ToDto()
         );
@@ -168,7 +168,7 @@ public class SettlementsController(
     [HttpPut("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<EntryDto>> UpdateEntry(int id, int entryId, [FromBody] UpdateEntryDto dto)
+    public async Task<ActionResult<EntryDto>> UpdateEntryAsync(int id, int entryId, [FromBody] UpdateEntryDto dto)
     {
         Entry? updated = await entryRepository.UpdateAsync(dto.ToDomain(entryId, id));
         if (updated is null)
@@ -184,7 +184,7 @@ public class SettlementsController(
     [HttpDelete("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteEntry(int id, int entryId)
+    public async Task<IActionResult> DeleteEntryAsync(int id, int entryId)
     {
         bool deleted = await entryRepository.DeleteAsync(entryId);
         if (!deleted)
