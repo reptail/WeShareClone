@@ -10,20 +10,16 @@ public class CreateSettlementDto
     [Required]
     [StringLength(3, MinimumLength = 3)]
     public string Currency { get; init; } = string.Empty;
-    [Range(1, int.MaxValue)]
-    public int CreatedBy { get; init; }
 
     public CreateSettlementDto() { }
 
     public CreateSettlementDto(
         string name,
         string? thumbnail,
-        string currency,
-        int createdBy)
+        string currency)
     {
         Name = name;
         Thumbnail = thumbnail;
         Currency = currency;
-        CreatedBy = createdBy;
     }
 }

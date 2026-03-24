@@ -10,6 +10,16 @@ namespace WeShareClone.Api.DataAccess.Repositories;
 
 public class SettlementRepository(Func<SqlConnection> connectionFactory) : ISettlementRepository
 {
+    public async Task<bool> IsParticipantAsync(int settlementId, int userId)
+    {
+        using SqlConnection connection = connectionFactory();
+        int result = await connection.ExecuteScalarAsync<int>(
+            sql: SqlScripts.IsSettlementParticipant,
+            param: new { SettlementId = settlementId, UserId = userId }
+        );
+        return result == 1;
+    }
+
     public async Task<Settlement[]> GetAllAsync()
     {
         using SqlConnection connection = connectionFactory();

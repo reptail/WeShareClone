@@ -8,13 +8,13 @@ public static class DtoToDomainMappingExtensions
 {
     extension(CreateSettlementDto dto)
     {
-        public Settlement ToDomain()
+        public Settlement ToDomain(int createdBy)
             => new(
                 Id: 0,
                 Name: dto.Name,
                 Thumbnail: dto.Thumbnail,
                 Currency: dto.Currency,
-                CreatedBy: dto.CreatedBy,
+                CreatedBy: createdBy,
                 CreatedAtUtc: default
             );
     }
@@ -34,14 +34,14 @@ public static class DtoToDomainMappingExtensions
 
     extension(CreateEntryDto dto)
     {
-        public Entry ToDomain(int settlementId)
+        public Entry ToDomain(int settlementId, int addedBy)
             => new(
                 Id: 0,
                 SettlementId: settlementId,
                 Name: dto.Name,
                 Value: dto.Value,
                 Currency: dto.Currency,
-                AddedBy: dto.AddedBy,
+                AddedBy: addedBy,
                 AddedAtUtc: default
             );
     }

@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WeShareClone.Api.Domain.Models;
 using WeShareClone.Api.Domain.Repositories;
@@ -9,15 +11,22 @@ namespace WeShareClone.Api.Controllers;
 
 [ApiController]
 [Route("settlements")]
+[Authorize]
 public class SettlementsController(
     ISettlementRepository settlementRepository,
     IEntryRepository entryRepository) : ControllerBase
 {
+    private int GetUserId()
+        => int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
     /// <summary>Returns all settlements.</summary>
     /// <returns>An array of all settlements.</returns>
     /// <response code="200">Settlements retrieved successfully.</response>
+    /// <response code="403">Caller does not have the Admin role.</response>
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<SettlementDto[]>> GetAllAsync()
     {
         Settlement[] settlements = await settlementRepository.GetAllAsync();
@@ -28,15 +37,21 @@ public class SettlementsController(
     /// <param name="id">The ID of the settlement.</param>
     /// <returns>The settlement with the given ID.</returns>
     /// <response code="200">Settlement found and returned.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
     /// <response code="404">No settlement with the given ID exists.</response>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SettlementDto>> GetByIdAsync(int id)
     {
         Settlement? settlement = await settlementRepository.GetByIdAsync(id);
         if (settlement is null)
             return NotFound();
+
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return Forbid();
+
         return Ok(settlement.ToDto());
     }
 
@@ -48,7 +63,7 @@ public class SettlementsController(
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<SettlementDto>> CreateAsync([FromBody] CreateSettlementDto dto)
     {
-        Settlement created = await settlementRepository.CreateAsync(dto.ToDomain());
+        Settlement created = await settlementRepository.CreateAsync(dto.ToDomain(GetUserId()));
         return CreatedAtAction(
             actionName: nameof(GetByIdAsync),
             routeValues: new { id = created.Id },
@@ -61,30 +76,47 @@ public class SettlementsController(
     /// <param name="dto">The updated settlement data.</param>
     /// <returns>The updated settlement.</returns>
     /// <response code="200">Settlement updated successfully.</response>
+    /// <response code="403">Caller is not the creator of this settlement.</response>
     /// <response code="404">No settlement with the given ID exists.</response>
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<SettlementDto>> UpdateAsync(int id, [FromBody] UpdateSettlementDto dto)
     {
+        Settlement? settlement = await settlementRepository.GetByIdAsync(id);
+        if (settlement is null)
+            return NotFound();
+
+        if (settlement.CreatedBy != GetUserId())
+            return Forbid();
+
         Settlement? updated = await settlementRepository.UpdateAsync(dto.ToDomain(id));
         if (updated is null)
             return NotFound();
+
         return Ok(updated.ToDto());
     }
 
     /// <summary>Deletes a settlement by its ID.</summary>
     /// <param name="id">The ID of the settlement to delete.</param>
     /// <response code="204">Settlement deleted successfully.</response>
+    /// <response code="403">Caller is not the creator of this settlement.</response>
     /// <response code="404">No settlement with the given ID exists.</response>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(int id)
     {
-        bool deleted = await settlementRepository.DeleteAsync(id);
-        if (!deleted)
+        Settlement? settlement = await settlementRepository.GetByIdAsync(id);
+        if (settlement is null)
             return NotFound();
+
+        if (settlement.CreatedBy != GetUserId())
+            return Forbid();
+
+        await settlementRepository.DeleteAsync(id);
         return NoContent();
     }
 
@@ -92,10 +124,17 @@ public class SettlementsController(
     /// <param name="id">The ID of the settlement.</param>
     /// <param name="dto">The user to add.</param>
     /// <response code="204">User added to settlement successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
     [HttpPost("{id:int}/users")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddUserAsync(int id, [FromBody] AddSettlementUserDto dto)
     {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
         await settlementRepository.AddUserAsync(settlementId: id, userId: dto.UserId);
         return NoContent();
     }
@@ -104,10 +143,17 @@ public class SettlementsController(
     /// <param name="id">The ID of the settlement.</param>
     /// <param name="userId">The ID of the user to remove.</param>
     /// <response code="204">User removed from settlement successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
     [HttpDelete("{id:int}/users/{userId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveUserAsync(int id, int userId)
     {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
         await settlementRepository.RemoveUserAsync(settlementId: id, userId: userId);
         return NoContent();
     }
@@ -116,10 +162,17 @@ public class SettlementsController(
     /// <param name="id">The ID of the settlement.</param>
     /// <returns>An array of entries belonging to the settlement.</returns>
     /// <response code="200">Entries retrieved successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
     [HttpGet("{id:int}/entries")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EntryDto[]>> GetEntriesAsync(int id)
     {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
         Entry[] entries = await entryRepository.GetBySettlementIdAsync(id);
         return Ok(entries.Select(e => e.ToDto()).ToArray());
     }
@@ -129,15 +182,21 @@ public class SettlementsController(
     /// <param name="entryId">The ID of the entry.</param>
     /// <returns>The entry with the given ID.</returns>
     /// <response code="200">Entry found and returned.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
     /// <response code="404">No entry with the given ID exists in this settlement.</response>
     [HttpGet("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EntryDto>> GetEntryAsync(int id, int entryId)
     {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
         Entry? entry = await entryRepository.GetByIdAsync(entryId);
         if (entry is null || entry.SettlementId != id)
             return NotFound();
+
         return Ok(entry.ToDto());
     }
 
@@ -146,11 +205,18 @@ public class SettlementsController(
     /// <param name="dto">The entry data to create.</param>
     /// <returns>The newly created entry.</returns>
     /// <response code="201">Entry created successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
     [HttpPost("{id:int}/entries")]
     [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EntryDto>> CreateEntryAsync(int id, [FromBody] CreateEntryDto dto)
     {
-        Entry created = await entryRepository.CreateAsync(dto.ToDomain(id));
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
+        Entry created = await entryRepository.CreateAsync(dto.ToDomain(id, GetUserId()));
         return CreatedAtAction(
             actionName: nameof(GetEntryAsync),
             routeValues: new { id = created.SettlementId, entryId = created.Id },
@@ -164,15 +230,25 @@ public class SettlementsController(
     /// <param name="dto">The updated entry data.</param>
     /// <returns>The updated entry.</returns>
     /// <response code="200">Entry updated successfully.</response>
+    /// <response code="403">Caller is not the creator of this entry.</response>
     /// <response code="404">No entry with the given ID exists in this settlement.</response>
     [HttpPut("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EntryDto>> UpdateEntryAsync(int id, int entryId, [FromBody] UpdateEntryDto dto)
     {
+        Entry? entry = await entryRepository.GetByIdAsync(entryId);
+        if (entry is null || entry.SettlementId != id)
+            return NotFound();
+
+        if (entry.AddedBy != GetUserId())
+            return Forbid();
+
         Entry? updated = await entryRepository.UpdateAsync(dto.ToDomain(entryId, id));
         if (updated is null)
             return NotFound();
+
         return Ok(updated.ToDto());
     }
 
@@ -180,15 +256,22 @@ public class SettlementsController(
     /// <param name="id">The ID of the settlement the entry belongs to.</param>
     /// <param name="entryId">The ID of the entry to delete.</param>
     /// <response code="204">Entry deleted successfully.</response>
+    /// <response code="403">Caller is not the creator of this entry.</response>
     /// <response code="404">No entry with the given ID exists in this settlement.</response>
     [HttpDelete("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteEntryAsync(int id, int entryId)
     {
-        bool deleted = await entryRepository.DeleteAsync(entryId);
-        if (!deleted)
+        Entry? entry = await entryRepository.GetByIdAsync(entryId);
+        if (entry is null || entry.SettlementId != id)
             return NotFound();
+
+        if (entry.AddedBy != GetUserId())
+            return Forbid();
+
+        await entryRepository.DeleteAsync(entryId);
         return NoContent();
     }
 }

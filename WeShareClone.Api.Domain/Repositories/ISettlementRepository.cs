@@ -4,6 +4,7 @@ namespace WeShareClone.Api.Domain.Repositories;
 
 public interface ISettlementRepository
 {
+    Task<bool> IsParticipantAsync(int settlementId, int userId);
     Task<Settlement[]> GetAllAsync();
     Task<Settlement?> GetByIdAsync(int id);
     Task<Settlement> CreateAsync(Settlement settlement);
