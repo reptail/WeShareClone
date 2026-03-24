@@ -1,6 +1,7 @@
 using WeShareClone.Api.Domain.Models;
 using WeShareClone.Api.Dto.Entries;
 using WeShareClone.Api.Dto.Settlements;
+using WeShareClone.Api.Dto.Users;
 
 namespace WeShareClone.Api.Extensions;
 
@@ -30,6 +31,17 @@ public static class DomainToDtoMappingExtensions
                 currency: entry.Currency,
                 addedBy: entry.AddedBy,
                 addedAtUtc: entry.AddedAtUtc
+            );
+    }
+
+    extension(User user)
+    {
+        public UserDto ToDto()
+            => new(
+                id: user.Id,
+                email: user.Email,
+                name: user.Name,
+                role: user.Role.ToString()
             );
     }
 }

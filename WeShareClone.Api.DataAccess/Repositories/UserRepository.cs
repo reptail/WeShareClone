@@ -39,4 +39,14 @@ public class UserRepository(Func<SqlConnection> connectionFactory) : IUserReposi
         );
         return row.ToDomain();
     }
+
+    public async Task<User?> UpdateNameAsync(int id, string name)
+    {
+        using SqlConnection connection = connectionFactory();
+        DbUser? row = await connection.QuerySingleOrDefaultAsync<DbUser>(
+            sql: SqlScripts.UpdateUserName,
+            param: new { Id = id, Name = name }
+        );
+        return row?.ToDomain();
+    }
 }
