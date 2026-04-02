@@ -98,4 +98,14 @@ public class SettlementRepository(Func<SqlConnection> connectionFactory) : ISett
             param: new { SettlementId = settlementId, UserId = userId }
         );
     }
+
+    public async Task<int[]> GetParticipantIdsAsync(int settlementId)
+    {
+        using SqlConnection connection = connectionFactory();
+        IEnumerable<int> ids = await connection.QueryAsync<int>(
+            sql: SqlScripts.GetSettlementParticipantIds,
+            param: new { SettlementId = settlementId }
+        );
+        return ids.ToArray();
+    }
 }

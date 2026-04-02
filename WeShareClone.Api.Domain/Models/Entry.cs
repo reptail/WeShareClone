@@ -7,4 +7,5 @@ public record Entry(
     decimal Value,
     string Currency,
     int AddedBy,
-    DateTime AddedAtUtc);
+    DateTime AddedAtUtc,
+    IReadOnlyList<EntryDistribution> Distributions);

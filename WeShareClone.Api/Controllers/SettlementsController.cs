@@ -205,16 +205,22 @@ public class SettlementsController(
     /// <param name="dto">The entry data to create.</param>
     /// <returns>The newly created entry.</returns>
     /// <response code="201">Entry created successfully.</response>
+    /// <response code="400">One or more distribution user IDs are not participants of the settlement.</response>
     /// <response code="403">Caller is not a participant of this settlement.</response>
     /// <response code="404">No settlement with the given ID exists.</response>
     [HttpPost("{id:int}/entries")]
     [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EntryDto>> CreateEntryAsync(int id, [FromBody] CreateEntryDto dto)
     {
         if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
             return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
+        int[] participantIds = await settlementRepository.GetParticipantIdsAsync(id);
+        if (dto.Distributions.Any(d => !participantIds.Contains(d.UserId)))
+            return BadRequest();
 
         Entry created = await entryRepository.CreateAsync(dto.ToDomain(id, GetUserId()));
         return CreatedAtAction(
@@ -230,10 +236,12 @@ public class SettlementsController(
     /// <param name="dto">The updated entry data.</param>
     /// <returns>The updated entry.</returns>
     /// <response code="200">Entry updated successfully.</response>
+    /// <response code="400">One or more distribution user IDs are not participants of the settlement.</response>
     /// <response code="403">Caller is not the creator of this entry.</response>
     /// <response code="404">No entry with the given ID exists in this settlement.</response>
     [HttpPut("{id:int}/entries/{entryId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<EntryDto>> UpdateEntryAsync(int id, int entryId, [FromBody] UpdateEntryDto dto)
@@ -244,6 +252,10 @@ public class SettlementsController(
 
         if (entry.AddedBy != GetUserId())
             return Forbid();
+
+        int[] participantIds = await settlementRepository.GetParticipantIdsAsync(id);
+        if (dto.Distributions.Any(d => !participantIds.Contains(d.UserId)))
+            return BadRequest();
 
         Entry? updated = await entryRepository.UpdateAsync(dto.ToDomain(entryId, id));
         if (updated is null)

@@ -33,7 +33,7 @@ public static class DbToDomainMappingExtensions
 
     extension(DbEntry db)
     {
-        public Entry ToDomain()
+        public Entry ToDomain(IReadOnlyList<EntryDistribution> distributions)
             => new(
                 Id: db.Id,
                 SettlementId: db.SettlementId,
@@ -41,8 +41,15 @@ public static class DbToDomainMappingExtensions
                 Value: db.Value,
                 Currency: db.Currency,
                 AddedBy: db.AddedBy,
-                AddedAtUtc: db.AddedAtUtc
+                AddedAtUtc: db.AddedAtUtc,
+                Distributions: distributions
             );
+    }
+
+    extension(DbEntryDistribution db)
+    {
+        public EntryDistribution ToDomain()
+            => new(UserId: db.UserId, Factor: db.Factor);
     }
 
     extension(DbVerificationCode db)

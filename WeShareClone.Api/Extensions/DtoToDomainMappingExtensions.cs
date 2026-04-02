@@ -42,7 +42,8 @@ public static class DtoToDomainMappingExtensions
                 Value: dto.Value,
                 Currency: dto.Currency,
                 AddedBy: addedBy,
-                AddedAtUtc: default
+                AddedAtUtc: default,
+                Distributions: dto.Distributions.Select(d => d.ToDomain()).ToArray()
             );
     }
 
@@ -56,7 +57,14 @@ public static class DtoToDomainMappingExtensions
                 Value: dto.Value,
                 Currency: dto.Currency,
                 AddedBy: 0,
-                AddedAtUtc: default
+                AddedAtUtc: default,
+                Distributions: dto.Distributions.Select(d => d.ToDomain()).ToArray()
             );
+    }
+
+    extension(EntryDistributionDto dto)
+    {
+        public EntryDistribution ToDomain()
+            => new(UserId: dto.UserId, Factor: dto.Factor);
     }
 }

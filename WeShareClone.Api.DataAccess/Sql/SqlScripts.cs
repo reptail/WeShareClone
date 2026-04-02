@@ -27,12 +27,18 @@ public static class SqlScripts
     public static string AddUserToSettlement      => Load(nameof(AddUserToSettlement));
     public static string RemoveUserFromSettlement => Load(nameof(RemoveUserFromSettlement));
     public static string IsSettlementParticipant  => Load(nameof(IsSettlementParticipant));
+    public static string GetSettlementParticipantIds => Load(nameof(GetSettlementParticipantIds));
 
     public static string GetEntriesBySettlementId => Load(nameof(GetEntriesBySettlementId));
     public static string GetEntryById             => Load(nameof(GetEntryById));
     public static string CreateEntry              => Load(nameof(CreateEntry));
     public static string UpdateEntry              => Load(nameof(UpdateEntry));
     public static string DeleteEntry              => Load(nameof(DeleteEntry));
+
+    public static string GetEntryDistributionsByEntryId      => Load(nameof(GetEntryDistributionsByEntryId));
+    public static string GetEntryDistributionsBySettlementId => Load(nameof(GetEntryDistributionsBySettlementId));
+    public static string CreateEntryDistribution             => Load(nameof(CreateEntryDistribution));
+    public static string DeleteEntryDistributionsByEntryId   => Load(nameof(DeleteEntryDistributionsByEntryId));
 
     public static string GetUserByEmail                => Load(nameof(GetUserByEmail));
     public static string GetUserById                   => Load(nameof(GetUserById));

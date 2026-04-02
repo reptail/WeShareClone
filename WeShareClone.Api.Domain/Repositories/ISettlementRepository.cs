@@ -11,6 +11,7 @@ public interface ISettlementRepository
     Task<Settlement?> UpdateAsync(Settlement settlement);
     Task<bool> DeleteAsync(int id);
 
+    Task<int[]> GetParticipantIdsAsync(int settlementId);
     Task AddUserAsync(int settlementId, int userId);
     Task RemoveUserAsync(int settlementId, int userId);
 }

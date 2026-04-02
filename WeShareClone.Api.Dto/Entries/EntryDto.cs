@@ -12,6 +12,7 @@ public class EntryDto
     public string Currency { get; init; } = string.Empty;
     public int AddedBy { get; init; }
     public DateTime AddedAtUtc { get; init; }
+    public EntryDistributionDto[] Distributions { get; init; } = [];
 
     public EntryDto() { }
 
@@ -22,7 +23,8 @@ public class EntryDto
         decimal value,
         string currency,
         int addedBy,
-        DateTime addedAtUtc)
+        DateTime addedAtUtc,
+        EntryDistributionDto[] distributions)
     {
         Id = id;
         SettlementId = settlementId;
@@ -31,5 +33,6 @@ public class EntryDto
         Currency = currency;
         AddedBy = addedBy;
         AddedAtUtc = addedAtUtc;
+        Distributions = distributions;
     }
 }

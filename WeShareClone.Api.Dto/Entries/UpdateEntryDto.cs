@@ -11,16 +11,21 @@ public class UpdateEntryDto
     [Required]
     [StringLength(3, MinimumLength = 3)]
     public string Currency { get; init; } = string.Empty;
+    [Required]
+    [MinLength(1)]
+    public EntryDistributionDto[] Distributions { get; init; } = [];
 
     public UpdateEntryDto() { }
 
     public UpdateEntryDto(
         string name,
         decimal value,
-        string currency)
+        string currency,
+        EntryDistributionDto[] distributions)
     {
         Name = name;
         Value = value;
         Currency = currency;
+        Distributions = distributions;
     }
 }

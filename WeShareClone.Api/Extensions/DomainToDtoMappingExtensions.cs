@@ -30,8 +30,15 @@ public static class DomainToDtoMappingExtensions
                 value: entry.Value,
                 currency: entry.Currency,
                 addedBy: entry.AddedBy,
-                addedAtUtc: entry.AddedAtUtc
+                addedAtUtc: entry.AddedAtUtc,
+                distributions: entry.Distributions.Select(d => d.ToDto()).ToArray()
             );
+    }
+
+    extension(EntryDistribution distribution)
+    {
+        public EntryDistributionDto ToDto()
+            => new(userId: distribution.UserId, factor: distribution.Factor);
     }
 
     extension(User user)
