@@ -1,9 +1,9 @@
 <Solution>
   <Folder Name="/Backend/">
-    <Project Path="WeShareClone.Api/WeShareClone.Api.csproj" />
-    <Project Path="WeShareClone.Api.Domain/WeShareClone.Api.Domain.csproj" />
-    <Project Path="WeShareClone.Api.DataAccess/WeShareClone.Api.DataAccess.csproj" />
-    <Project Path="WeShareClone.Api.Dto/WeShareClone.Api.Dto.csproj" />
+    <Project Path="Backend/WeShareClone.Api/WeShareClone.Api.csproj" />
+    <Project Path="Backend/WeShareClone.Api.Domain/WeShareClone.Api.Domain.csproj" />
+    <Project Path="Backend/WeShareClone.Api.DataAccess/WeShareClone.Api.DataAccess.csproj" />
+    <Project Path="Backend/WeShareClone.Api.Dto/WeShareClone.Api.Dto.csproj" />
   </Folder>
   <Folder Name="/Frontend/">
     <Project Path="Frontend/WeShareClone.Web/WeShareClone.Web.csproj" />
