@@ -31,7 +31,8 @@ public static class DomainToDtoMappingExtensions
                 currency: entry.Currency,
                 addedBy: entry.AddedBy,
                 addedAtUtc: entry.AddedAtUtc,
-                distributions: entry.Distributions.Select(d => d.ToDto()).ToArray()
+                distributions: entry.Distributions.Select(d => d.ToDto()).ToArray(),
+                distributionMode: entry.DistributionMode.ToString()
             );
     }
 

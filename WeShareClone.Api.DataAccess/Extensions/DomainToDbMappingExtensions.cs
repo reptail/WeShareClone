@@ -45,6 +45,7 @@ public static class DomainToDbMappingExtensions
                 Currency = domain.Currency,
                 AddedBy = domain.AddedBy,
                 AddedAtUtc = domain.AddedAtUtc,
+                DistributionMode = domain.DistributionMode,
             };
     }
 }

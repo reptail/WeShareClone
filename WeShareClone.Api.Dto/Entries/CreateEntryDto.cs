@@ -14,6 +14,9 @@ public class CreateEntryDto
     [Required]
     [MinLength(1)]
     public EntryDistributionDto[] Distributions { get; init; } = [];
+    [Required]
+    [RegularExpression(DistributionModes.ValidationPattern)]
+    public string DistributionMode { get; init; } = string.Empty;
 
     public CreateEntryDto() { }
 
@@ -21,11 +24,13 @@ public class CreateEntryDto
         string name,
         decimal value,
         string currency,
-        EntryDistributionDto[] distributions)
+        EntryDistributionDto[] distributions,
+        string distributionMode)
     {
         Name = name;
         Value = value;
         Currency = currency;
         Distributions = distributions;
+        DistributionMode = distributionMode;
     }
 }

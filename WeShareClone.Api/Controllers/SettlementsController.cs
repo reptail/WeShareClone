@@ -205,7 +205,7 @@ public class SettlementsController(
     /// <param name="dto">The entry data to create.</param>
     /// <returns>The newly created entry.</returns>
     /// <response code="201">Entry created successfully.</response>
-    /// <response code="400">One or more distribution user IDs are not participants of the settlement.</response>
+    /// <response code="400">One or more distribution user IDs are not participants of the settlement, or the distribution factors are inconsistent with the chosen mode.</response>
     /// <response code="403">Caller is not a participant of this settlement.</response>
     /// <response code="404">No settlement with the given ID exists.</response>
     [HttpPost("{id:int}/entries")]
@@ -222,6 +222,10 @@ public class SettlementsController(
         if (dto.Distributions.Any(d => !participantIds.Contains(d.UserId)))
             return BadRequest();
 
+        EDistributionMode mode = Enum.Parse<EDistributionMode>(dto.DistributionMode);
+        if (!IsDistributionValid(mode, dto.Distributions, dto.Value))
+            return BadRequest();
+
         Entry created = await entryRepository.CreateAsync(dto.ToDomain(id, GetUserId()));
         return CreatedAtAction(
             actionName: nameof(GetEntryAsync),
@@ -236,7 +240,7 @@ public class SettlementsController(
     /// <param name="dto">The updated entry data.</param>
     /// <returns>The updated entry.</returns>
     /// <response code="200">Entry updated successfully.</response>
-    /// <response code="400">One or more distribution user IDs are not participants of the settlement.</response>
+    /// <response code="400">One or more distribution user IDs are not participants of the settlement, or the distribution factors are inconsistent with the chosen mode.</response>
     /// <response code="403">Caller is not the creator of this entry.</response>
     /// <response code="404">No entry with the given ID exists in this settlement.</response>
     [HttpPut("{id:int}/entries/{entryId:int}")]
@@ -255,6 +259,10 @@ public class SettlementsController(
 
         int[] participantIds = await settlementRepository.GetParticipantIdsAsync(id);
         if (dto.Distributions.Any(d => !participantIds.Contains(d.UserId)))
+            return BadRequest();
+
+        EDistributionMode mode = Enum.Parse<EDistributionMode>(dto.DistributionMode);
+        if (!IsDistributionValid(mode, dto.Distributions, dto.Value))
             return BadRequest();
 
         Entry? updated = await entryRepository.UpdateAsync(dto.ToDomain(entryId, id));
@@ -286,4 +294,23 @@ public class SettlementsController(
         await entryRepository.DeleteAsync(entryId);
         return NoContent();
     }
+
+    /// <summary>
+    /// Validates that the distribution factors are consistent with the chosen distribution mode.
+    /// </summary>
+    /// <param name="mode">The distribution mode to validate against.</param>
+    /// <param name="distributions">The distributions to validate.</param>
+    /// <param name="entryValue">The total value of the entry, used for <see cref="EDistributionMode.FixedAmount"/> validation.</param>
+    /// <returns><see langword="true"/> if the factors satisfy the mode's constraints; otherwise <see langword="false"/>.</returns>
+    private static bool IsDistributionValid(EDistributionMode mode, EntryDistributionDto[] distributions, decimal entryValue)
+        => mode switch
+        {
+            // All factors must be identical
+            EDistributionMode.EvenSplit   => distributions.Select(d => d.Factor).Distinct().Count() == 1,
+            // Factors must sum to 1.0 (within floating-point tolerance)
+            EDistributionMode.Percentage  => Math.Abs(distributions.Sum(d => d.Factor) - 1.0m) <= 0.001m,
+            // Factors represent fixed amounts and must sum to the entry value (within rounding tolerance)
+            EDistributionMode.FixedAmount => Math.Abs(distributions.Sum(d => d.Factor) - entryValue) <= 0.01m,
+            _                             => false,
+        };
 }

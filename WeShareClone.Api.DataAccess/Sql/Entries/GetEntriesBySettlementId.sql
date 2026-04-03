@@ -4,7 +4,8 @@ SELECT Id,
        Value,
        Currency,
        AddedBy,
-       AddedAtUtc
+       AddedAtUtc,
+       DistributionMode
 FROM   Entries
 WHERE  SettlementId = @SettlementId
 ORDER BY AddedAtUtc;

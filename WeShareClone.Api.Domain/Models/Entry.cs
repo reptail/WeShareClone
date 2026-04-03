@@ -8,4 +8,5 @@ public record Entry(
     string Currency,
     int AddedBy,
     DateTime AddedAtUtc,
-    IReadOnlyList<EntryDistribution> Distributions);
+    IReadOnlyList<EntryDistribution> Distributions,
+    EDistributionMode DistributionMode);

@@ -43,7 +43,8 @@ public static class DtoToDomainMappingExtensions
                 Currency: dto.Currency,
                 AddedBy: addedBy,
                 AddedAtUtc: default,
-                Distributions: dto.Distributions.Select(d => d.ToDomain()).ToArray()
+                Distributions: dto.Distributions.Select(d => d.ToDomain()).ToArray(),
+                DistributionMode: Enum.Parse<EDistributionMode>(dto.DistributionMode)
             );
     }
 
@@ -58,7 +59,8 @@ public static class DtoToDomainMappingExtensions
                 Currency: dto.Currency,
                 AddedBy: 0,
                 AddedAtUtc: default,
-                Distributions: dto.Distributions.Select(d => d.ToDomain()).ToArray()
+                Distributions: dto.Distributions.Select(d => d.ToDomain()).ToArray(),
+                DistributionMode: Enum.Parse<EDistributionMode>(dto.DistributionMode)
             );
     }
 

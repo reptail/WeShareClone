@@ -42,7 +42,8 @@ public static class DbToDomainMappingExtensions
                 Currency: db.Currency,
                 AddedBy: db.AddedBy,
                 AddedAtUtc: db.AddedAtUtc,
-                Distributions: distributions
+                Distributions: distributions,
+                DistributionMode: db.DistributionMode
             );
     }
 

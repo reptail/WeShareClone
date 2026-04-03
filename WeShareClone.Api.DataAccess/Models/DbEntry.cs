@@ -1,3 +1,5 @@
+using WeShareClone.Api.Domain.Models;
+
 namespace WeShareClone.Api.DataAccess.Models;
 
 public class DbEntry
@@ -9,4 +11,5 @@ public class DbEntry
     public string Currency { get; init; } = string.Empty;
     public int AddedBy { get; init; }
     public DateTime AddedAtUtc { get; init; }
+    public EDistributionMode DistributionMode { get; init; }
 }
