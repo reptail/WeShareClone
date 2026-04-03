@@ -6,4 +6,5 @@ public record Settlement(
     string? Thumbnail,
     string Currency,
     int CreatedBy,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    bool IsOpen);

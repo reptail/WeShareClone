@@ -10,16 +10,19 @@ public class UpdateSettlementDto
     [Required]
     [StringLength(3, MinimumLength = 3)]
     public string Currency { get; init; } = string.Empty;
+    public bool IsOpen { get; init; } = true;
 
     public UpdateSettlementDto() { }
 
     public UpdateSettlementDto(
         string name,
         string? thumbnail,
-        string currency)
+        string currency,
+        bool isOpen = true)
     {
         Name = name;
         Thumbnail = thumbnail;
         Currency = currency;
+        IsOpen = isOpen;
     }
 }

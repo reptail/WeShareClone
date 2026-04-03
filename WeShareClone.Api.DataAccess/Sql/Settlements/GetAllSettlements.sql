@@ -3,6 +3,7 @@ SELECT Id,
        Thumbnail,
        Currency,
        CreatedBy,
-       CreatedAtUtc
+       CreatedAtUtc,
+       IsOpen
 FROM   Settlements
 ORDER BY Name;

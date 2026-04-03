@@ -15,7 +15,8 @@ public static class DtoToDomainMappingExtensions
                 Thumbnail: dto.Thumbnail,
                 Currency: dto.Currency,
                 CreatedBy: createdBy,
-                CreatedAtUtc: default
+                CreatedAtUtc: default,
+                IsOpen: dto.IsOpen
             );
     }
 
@@ -28,7 +29,8 @@ public static class DtoToDomainMappingExtensions
                 Thumbnail: dto.Thumbnail,
                 Currency: dto.Currency,
                 CreatedBy: 0,
-                CreatedAtUtc: default
+                CreatedAtUtc: default,
+                IsOpen: dto.IsOpen
             );
     }
 

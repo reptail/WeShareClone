@@ -1,0 +1,111 @@
+﻿@page "/"
+@inject AuthStateService AuthState
+@inject SettlementService SettlementService
+@inject NavigationManager Nav
+
+<PageTitle>Settlements – WeShare</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    <!-- Auth guard: redirect handled in OnInitializedAsync -->
+    return;
+}
+
+<div class="space-y-4">
+    <div class="flex items-center justify-between">
+        <h1 class="text-xl font-semibold">Settlements</h1>
+    </div>
+
+    <!-- Open / Closed tab toggle -->
+    <div class="flex gap-1 bg-zinc-900 rounded-xl p-1 w-fit">
+        <button @onclick='() => SetTab(true)'
+                class="@TabClass(true) px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">
+            Open
+        </button>
+        <button @onclick='() => SetTab(false)'
+                class="@TabClass(false) px-4 py-1.5 rounded-lg text-sm font-medium transition-colors">
+            Closed
+        </button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="space-y-3">
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="h-20 bg-zinc-900 rounded-xl animate-pulse"></div>
+            }
+        </div>
+    }
+    else if (_settlements.Length == 0)
+    {
+        <div class="text-center py-16 text-zinc-500">
+            <p class="text-sm">No @(_showOpen ? "open" : "closed") settlements yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="space-y-3">
+            @foreach (SettlementModel s in _settlements)
+            {
+                <SettlementCard Settlement="s" CurrentUserId="AuthState.UserId"
+                                OnClick="@(() => Nav.NavigateTo($"/settlements/{s.Id}"))" />
+            }
+        </div>
+    }
+</div>
+
+<!-- Floating action button -->
+<button @onclick="() => _showAddModal = true"
+        class="fixed bottom-6 right-6 w-14 h-14 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white rounded-full shadow-lg flex items-center justify-center text-2xl transition-colors z-30 cursor-pointer">
+    +
+</button>
+
+@if (_showAddModal)
+{
+    <AddSettlementModal OnClose="() => _showAddModal = false"
+                        OnCreated="OnSettlementCreated" />
+}
+
+@code {
+    private SettlementModel[] _settlements = [];
+    private bool _loading = true;
+    private bool _showOpen = true;
+    private bool _showAddModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        await LoadSettlementsAsync();
+    }
+
+    private async Task LoadSettlementsAsync()
+    {
+        _loading = true;
+        SettlementModel[] all = await SettlementService.GetMySettlementsAsync();
+        _settlements = all.Where(s => s.IsOpen == _showOpen).ToArray();
+        _loading = false;
+    }
+
+    private async Task SetTab(bool open)
+    {
+        _showOpen = open;
+        await LoadSettlementsAsync();
+    }
+
+    private async Task OnSettlementCreated(SettlementModel settlement)
+    {
+        _showAddModal = false;
+        await LoadSettlementsAsync();
+    }
+
+    private string TabClass(bool open) =>
+        _showOpen == open
+            ? "bg-zinc-700 text-zinc-100"
+            : "text-zinc-400 hover:text-zinc-200";
+}

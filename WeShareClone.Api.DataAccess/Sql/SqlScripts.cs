@@ -21,6 +21,7 @@ public static class SqlScripts
 
     public static string GetAllSettlements        => Load(nameof(GetAllSettlements));
     public static string GetSettlementById        => Load(nameof(GetSettlementById));
+    public static string GetMySettlements         => Load(nameof(GetMySettlements));
     public static string CreateSettlement         => Load(nameof(CreateSettlement));
     public static string UpdateSettlement         => Load(nameof(UpdateSettlement));
     public static string DeleteSettlement         => Load(nameof(DeleteSettlement));
@@ -28,6 +29,7 @@ public static class SqlScripts
     public static string RemoveUserFromSettlement => Load(nameof(RemoveUserFromSettlement));
     public static string IsSettlementParticipant  => Load(nameof(IsSettlementParticipant));
     public static string GetSettlementParticipantIds => Load(nameof(GetSettlementParticipantIds));
+    public static string GetSettlementParticipants   => Load(nameof(GetSettlementParticipants));
 
     public static string GetEntriesBySettlementId => Load(nameof(GetEntriesBySettlementId));
     public static string GetEntryById             => Load(nameof(GetEntryById));

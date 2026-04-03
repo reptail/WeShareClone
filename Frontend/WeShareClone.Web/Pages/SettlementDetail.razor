@@ -1,0 +1,180 @@
+@page "/settlements/{Id:int}"
+@inject AuthStateService AuthState
+@inject SettlementService SettlementService
+@inject EntryService EntryService
+@inject NavigationManager Nav
+
+<PageTitle>@(_settlement?.Name ?? "Settlement") – WeShare</PageTitle>
+
+@if (_loading)
+{
+    <div class="space-y-3">
+        <div class="h-8 w-48 bg-zinc-900 rounded-lg animate-pulse"></div>
+        @for (int i = 0; i < 4; i++)
+        {
+            <div class="h-24 bg-zinc-900 rounded-xl animate-pulse"></div>
+        }
+    </div>
+}
+else if (_settlement is null)
+{
+    <div class="text-center py-16 text-zinc-500 text-sm">Settlement not found.</div>
+}
+else
+{
+    <div class="space-y-4 pb-24">
+        <!-- Header -->
+        <div class="flex items-center gap-3">
+            <button @onclick='() => Nav.NavigateTo("/")'
+                    class="text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer text-lg leading-none">
+                ←
+            </button>
+            <div>
+                <h1 class="text-xl font-semibold">@_settlement.Name</h1>
+                <p class="text-xs text-zinc-500">@_settlement.Currency · @(_settlement.IsOpen ? "Open" : "Closed")</p>
+            </div>
+        </div>
+
+        <!-- Balance summary -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
+            @{
+                decimal balance = CalculateTotalBalance();
+            }
+            @if (balance > 0)
+            {
+                <p class="text-sm text-green-400 font-medium">You are owed @balance.ToString("N2") @_settlement.Currency</p>
+            }
+            else if (balance < 0)
+            {
+                <p class="text-sm text-red-400 font-medium">You owe @(Math.Abs(balance).ToString("N2")) @_settlement.Currency</p>
+            }
+            else
+            {
+                <p class="text-sm text-zinc-400">All settled up ✓</p>
+            }
+        </div>
+
+        <!-- Entry timeline -->
+        @if (_entries.Length == 0)
+        {
+            <div class="text-center py-12 text-zinc-500 text-sm">No entries yet. Add the first one!</div>
+        }
+        else
+        {
+            <div class="space-y-2">
+                @foreach (EntryModel entry in _entries.OrderByDescending(e => e.AddedAtUtc))
+                {
+                    <EntryCard Entry="entry"
+                               CurrentUserId="AuthState.UserId"
+                               Participants="_participants" />
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Add entry FAB -->
+    <button @onclick="() => _showAddEntry = true"
+            class="fixed bottom-6 right-6 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white rounded-full shadow-lg px-5 py-3 text-sm font-medium transition-colors z-30 cursor-pointer">
+        + Add entry
+    </button>
+
+    @if (_showAddEntry)
+    {
+        <AddEntryModal Settlement="_settlement"
+                       Participants="_participants"
+                       OnClose="() => _showAddEntry = false"
+                       OnCreated="OnEntryCreated" />
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private SettlementModel? _settlement;
+    private EntryModel[] _entries = [];
+    private UserModel[] _participants = [];
+    private bool _loading = true;
+    private bool _showAddEntry;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        Task<SettlementModel?> settlementTask = SettlementService.GetByIdAsync(Id);
+        Task<EntryModel[]> entriesTask = EntryService.GetEntriesAsync(Id);
+        Task<UserModel[]> participantsTask = SettlementService.GetParticipantsAsync(Id);
+
+        await Task.WhenAll(settlementTask, entriesTask, participantsTask);
+
+        _settlement = await settlementTask;
+        _entries = await entriesTask;
+        _participants = await participantsTask;
+
+        _loading = false;
+    }
+
+    private async Task OnEntryCreated(EntryModel entry)
+    {
+        _showAddEntry = false;
+        // Refresh entries list
+        _entries = await EntryService.GetEntriesAsync(Id);
+    }
+
+    /// <summary>
+    /// Calculates the current user's net balance across all entries.
+    /// Positive = owed to user; negative = user owes.
+    /// </summary>
+    private decimal CalculateTotalBalance()
+    {
+        decimal total = 0;
+
+        foreach (EntryModel entry in _entries)
+        {
+            decimal userShare = CalculateUserShare(entry);
+
+            // If the user paid for this entry, they are owed (value – their own share).
+            // If someone else paid, the user owes their share.
+            total += (entry.AddedBy == AuthState.UserId ? entry.Value : 0) - userShare;
+        }
+
+        return total;
+    }
+
+    private decimal CalculateUserShare(EntryModel entry)
+    {
+        EntryDistributionModel? dist = entry.Distributions
+            .FirstOrDefault(d => d.UserId == AuthState.UserId);
+
+        if (dist is null)
+        {
+            return 0;
+        }
+
+        return entry.DistributionMode switch
+        {
+            // EvenSplit: all factors are equal, so share = total / count
+            "EvenSplit" => entry.Distributions.Length > 0
+                ? entry.Value / entry.Distributions.Length
+                : 0,
+
+            // Percentage: factor is the user's share of the total
+            "Percentage" => entry.Value * dist.Factor,
+
+            // FixedAmount: factor is the exact amount owed
+            "FixedAmount" => dist.Factor,
+
+            _ => 0
+        };
+    }
+}

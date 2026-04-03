@@ -5,6 +5,7 @@ using WeShareClone.Api.Domain.Models;
 using WeShareClone.Api.Domain.Repositories;
 using WeShareClone.Api.Dto.Entries;
 using WeShareClone.Api.Dto.Settlements;
+using WeShareClone.Api.Dto.Users;
 using WeShareClone.Api.Extensions;
 
 namespace WeShareClone.Api.Controllers;
@@ -33,6 +34,17 @@ public class SettlementsController(
         return Ok(settlements.Select(s => s.ToDto()).ToArray());
     }
 
+    /// <summary>Returns all settlements the current user participates in.</summary>
+    /// <returns>An array of settlements the caller is a member or creator of.</returns>
+    /// <response code="200">Settlements retrieved successfully.</response>
+    [HttpGet("my")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<SettlementDto[]>> GetMyAsync()
+    {
+        Settlement[] settlements = await settlementRepository.GetByUserIdAsync(GetUserId());
+        return Ok(settlements.Select(s => s.ToDto()).ToArray());
+    }
+
     /// <summary>Returns a settlement by its ID.</summary>
     /// <param name="id">The ID of the settlement.</param>
     /// <returns>The settlement with the given ID.</returns>
@@ -53,6 +65,25 @@ public class SettlementsController(
             return Forbid();
 
         return Ok(settlement.ToDto());
+    }
+
+    /// <summary>Returns the participants of a settlement.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <returns>An array of users who are participants of the settlement.</returns>
+    /// <response code="200">Participants retrieved successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
+    [HttpGet("{id:int}/participants")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<UserDto[]>> GetParticipantsAsync(int id)
+    {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
+        User[] participants = await settlementRepository.GetParticipantsAsync(id);
+        return Ok(participants.Select(u => u.ToDto()).ToArray());
     }
 
     /// <summary>Creates a new settlement.</summary>

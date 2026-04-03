@@ -1,0 +1,33 @@
+﻿@inherits LayoutComponentBase
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<div class="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
+    @if (AuthState.IsAuthenticated)
+    {
+        <header class="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+            <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+                <span class="font-semibold text-zinc-100 tracking-tight">WeShare</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-zinc-400 hidden sm:block">@AuthState.UserName</span>
+                    <button @onclick="LogoutAsync"
+                            class="text-sm text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer">
+                        Sign out
+                    </button>
+                </div>
+            </div>
+        </header>
+    }
+
+    <main class="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
+        @Body
+    </main>
+</div>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await AuthState.ClearAsync();
+        Nav.NavigateTo("/login");
+    }
+}

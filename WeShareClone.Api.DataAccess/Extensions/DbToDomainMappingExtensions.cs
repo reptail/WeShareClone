@@ -27,7 +27,8 @@ public static class DbToDomainMappingExtensions
                 Thumbnail: db.Thumbnail,
                 Currency: db.Currency,
                 CreatedBy: db.CreatedBy,
-                CreatedAtUtc: db.CreatedAtUtc
+                CreatedAtUtc: db.CreatedAtUtc,
+                IsOpen: db.IsOpen
             );
     }
 

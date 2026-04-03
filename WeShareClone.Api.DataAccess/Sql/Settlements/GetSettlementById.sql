@@ -3,6 +3,7 @@ SELECT Id,
        Thumbnail,
        Currency,
        CreatedBy,
-       CreatedAtUtc
+       CreatedAtUtc,
+       IsOpen
 FROM   Settlements
 WHERE  Id = @Id;

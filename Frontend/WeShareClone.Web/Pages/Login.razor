@@ -1,0 +1,161 @@
+@page "/login"
+@inject AuthService AuthService
+@inject AuthStateService AuthState
+@inject NavigationManager Nav
+
+<PageTitle>Sign in – WeShare</PageTitle>
+
+<div class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-sm space-y-6">
+        <div class="text-center space-y-1">
+            <h1 class="text-2xl font-bold text-zinc-100">WeShare</h1>
+            <p class="text-sm text-zinc-400">Split bills, settle up.</p>
+        </div>
+
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+
+            @if (!_codeSent)
+            {
+                <!-- Step 1: email input -->
+                <div class="space-y-1">
+                    <label class="text-sm text-zinc-400">Email address</label>
+                    <input @bind="_email" @bind:event="oninput"
+                           @onkeydown="OnEmailKeyDown"
+                           type="email"
+                           placeholder="you@example.com"
+                           class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+
+                @if (_errorMessage is not null)
+                {
+                    <p class="text-sm text-red-400">@_errorMessage</p>
+                }
+
+                <button @onclick="RequestCodeAsync"
+                        disabled="@_loading"
+                        class="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                    @(_loading ? "Sending…" : "Send code")
+                </button>
+            }
+            else
+            {
+                <!-- Step 2: OTP code input -->
+                <div class="space-y-1">
+                    <label class="text-sm text-zinc-400">Verification code</label>
+                    <p class="text-xs text-zinc-500">A 6-digit code was sent to <strong class="text-zinc-300">@_email</strong></p>
+                    <input @bind="_code" @bind:event="oninput"
+                           @onkeydown="OnCodeKeyDown"
+                           type="text"
+                           inputmode="numeric"
+                           maxlength="6"
+                           placeholder="123456"
+                           class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors tracking-widest text-center" />
+                </div>
+
+                @if (_errorMessage is not null)
+                {
+                    <p class="text-sm text-red-400">@_errorMessage</p>
+                }
+
+                <button @onclick="VerifyCodeAsync"
+                        disabled="@_loading"
+                        class="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                    @(_loading ? "Verifying…" : "Verify code")
+                </button>
+
+                <button @onclick="() => { _codeSent = false; _code = string.Empty; _errorMessage = null; }"
+                        class="w-full text-sm text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+                    ← Change email
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _email = string.Empty;
+    private string _code = string.Empty;
+    private bool _codeSent;
+    private bool _loading;
+    private string? _errorMessage;
+
+    protected override void OnInitialized()
+    {
+        if (AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/");
+        }
+    }
+
+    private async Task RequestCodeAsync()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            _errorMessage = "Please enter your email address.";
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            await AuthService.RequestLoginAsync(_email.Trim());
+            _codeSent = true;
+        }
+        catch
+        {
+            _errorMessage = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VerifyCodeAsync()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_code))
+        {
+            _errorMessage = "Please enter the verification code.";
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            bool success = await AuthService.VerifyCodeAsync(_email.Trim(), _code.Trim());
+
+            if (success)
+            {
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                _errorMessage = "Invalid or expired code. Please try again.";
+            }
+        }
+        catch
+        {
+            _errorMessage = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnEmailKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await RequestCodeAsync();
+    }
+
+    private async Task OnCodeKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await VerifyCodeAsync();
+    }
+}

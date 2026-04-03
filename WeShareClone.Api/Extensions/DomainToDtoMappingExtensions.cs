@@ -16,7 +16,8 @@ public static class DomainToDtoMappingExtensions
                 thumbnail: settlement.Thumbnail,
                 currency: settlement.Currency,
                 createdBy: settlement.CreatedBy,
-                createdAtUtc: settlement.CreatedAtUtc
+                createdAtUtc: settlement.CreatedAtUtc,
+                isOpen: settlement.IsOpen
             );
     }
 

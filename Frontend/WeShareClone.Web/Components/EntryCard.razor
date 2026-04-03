@@ -1,0 +1,58 @@
+<div class="flex @(IsOwnEntry ? "justify-end" : "justify-start")">
+    <div class="max-w-[80%] space-y-1">
+        <div class="@CardClass rounded-2xl px-4 py-3 space-y-1 @(IsOwnEntry ? "rounded-br-sm" : "rounded-bl-sm")">
+            <p class="font-medium text-sm">@Entry.Name</p>
+            <div class="flex items-baseline gap-2">
+                <span class="text-lg font-semibold">@Entry.Value.ToString("N2")</span>
+                <span class="text-xs text-zinc-400 uppercase">@Entry.Currency</span>
+            </div>
+            @if (UserShare > 0)
+            {
+                <p class="text-xs @ShareTextClass">Your share: @UserShare.ToString("N2") @Entry.Currency</p>
+            }
+        </div>
+        <div class="flex @(IsOwnEntry ? "justify-end" : "justify-start")">
+            <p class="text-xs text-zinc-500 px-1">
+                @(IsOwnEntry ? "You" : AddedByName) · @Entry.AddedAtUtc.ToLocalTime().ToString("MMM d, HH:mm")
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EntryModel Entry { get; set; } = null!;
+    [Parameter, EditorRequired] public int CurrentUserId { get; set; }
+    [Parameter] public UserModel[] Participants { get; set; } = [];
+
+    private bool IsOwnEntry => Entry.AddedBy == CurrentUserId;
+
+    private string CardClass =>
+        IsOwnEntry
+            ? "bg-violet-600/20 border border-violet-500/30 text-zinc-100"
+            : "bg-zinc-900 border border-zinc-800 text-zinc-100";
+
+    private string ShareTextClass =>
+        IsOwnEntry ? "text-violet-300" : "text-zinc-400";
+
+    private string AddedByName =>
+        Participants.FirstOrDefault(p => p.Id == Entry.AddedBy)?.Name ?? $"User {Entry.AddedBy}";
+
+    private decimal UserShare
+    {
+        get
+        {
+            EntryDistributionModel? dist = Entry.Distributions
+                .FirstOrDefault(d => d.UserId == CurrentUserId);
+
+            if (dist is null) return 0;
+
+            return Entry.DistributionMode switch
+            {
+                "EvenSplit"   => Entry.Distributions.Length > 0 ? Entry.Value / Entry.Distributions.Length : 0,
+                "Percentage"  => Entry.Value * dist.Factor,
+                "FixedAmount" => dist.Factor,
+                _             => 0
+            };
+        }
+    }
+}

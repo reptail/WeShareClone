@@ -5,4 +5,7 @@
     <Project Path="WeShareClone.Api.DataAccess/WeShareClone.Api.DataAccess.csproj" />
     <Project Path="WeShareClone.Api.Dto/WeShareClone.Api.Dto.csproj" />
   </Folder>
+  <Folder Name="/Frontend/">
+    <Project Path="Frontend/WeShareClone.Web/WeShareClone.Web.csproj" />
+  </Folder>
 </Solution>

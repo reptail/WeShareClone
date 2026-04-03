@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WeShare</title>
+    <base href="/" />
+    <link rel="preload" id="webassembly" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="WeShareClone.Web.styles.css" rel="stylesheet" />
+    <script type="importmap"></script>
+</head>
+
+<body class="bg-zinc-950 text-zinc-100 antialiased">
+    <div id="app">
+        <div class="flex items-center justify-center min-h-screen">
+            <div class="text-zinc-400 text-sm animate-pulse">Loading…</div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui" class="hidden fixed bottom-4 left-4 right-4 bg-red-900 border border-red-700 text-red-100 rounded-xl px-4 py-3 text-sm z-50">
+        An unhandled error has occurred.
+        <a href="." class="underline ml-2">Reload</a>
+        <span class="dismiss float-right cursor-pointer ml-4">✕</span>
+    </div>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+
+</html>
