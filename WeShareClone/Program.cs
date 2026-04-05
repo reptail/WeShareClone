@@ -3,6 +3,7 @@ using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
+using WeShareClone.Components;
 using WeShareClone.DataAccess.Repositories;
 using WeShareClone.Domain.Repositories;
 using WeShareClone.Domain.Services;
@@ -58,16 +59,33 @@ builder.Services.AddScoped<IPasskeyChallengeRepository, PasskeyChallengeReposito
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasskeyService, PasskeyService>();
 
-builder.Services.Configure<Fido2Configuration>(builder.Configuration.GetSection("Fido2"));
+// Fido2NetLib's Fido2 constructor requires Fido2Configuration directly, not IOptions<T>.
+Fido2Configuration fido2Config = builder.Configuration.GetSection("Fido2").Get<Fido2Configuration>() ?? new Fido2Configuration();
+builder.Services.AddSingleton(fido2Config);
 builder.Services.AddScoped<Fido2>();
+
+// Blazor Web App: server renders HTML shell, client pages run as WebAssembly.
+builder.Services.AddRazorComponents()
+    .AddInteractiveWebAssemblyComponents();
 
 WebApplication app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI(options => options.EnableTryItOutByDefault());
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseWebAssemblyDebugging();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 app.MapControllers();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(WeShareClone.Web._Imports).Assembly);
 
 app.Run();

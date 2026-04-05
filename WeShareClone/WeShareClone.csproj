@@ -8,12 +8,14 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <UserSecretsId>WeShareClone</UserSecretsId>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
     <PackageReference Include="Fido2" Version="4.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.5" />
     <PackageReference Include="Microsoft.Bcl.Memory" Version="10.0.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.5" />
   </ItemGroup>
@@ -21,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\WeShareClone.DataAccess\WeShareClone.DataAccess.csproj" />
     <ProjectReference Include="..\WeShareClone.Dto\WeShareClone.Dto.csproj" />
+    <ProjectReference Include="..\WeShareClone.Web\WeShareClone.Web.csproj" />
   </ItemGroup>
 
 </Project>

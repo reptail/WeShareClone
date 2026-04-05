@@ -9,7 +9,7 @@ public class DefaultController : ControllerBase
     /// <summary>
     /// Health check endpoint.
     /// </summary>
-    [HttpGet]
+    [HttpGet("health")]
     public string Get()
         => "Hello World";
 }
