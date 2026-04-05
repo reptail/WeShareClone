@@ -11,7 +11,7 @@ using WeShareClone.Extensions;
 namespace WeShareClone.Controllers;
 
 [ApiController]
-[Route("settlements")]
+[Route("api/settlements")]
 [Authorize]
 public class SettlementsController(
     ISettlementRepository settlementRepository,
@@ -95,11 +95,7 @@ public class SettlementsController(
     public async Task<ActionResult<SettlementDto>> CreateAsync([FromBody] CreateSettlementDto dto)
     {
         Settlement created = await settlementRepository.CreateAsync(dto.ToDomain(GetUserId()));
-        return CreatedAtAction(
-            actionName: nameof(GetByIdAsync),
-            routeValues: new { id = created.Id },
-            value: created.ToDto()
-        );
+        return Created($"api/settlements/{created.Id}", created.ToDto());
     }
 
     /// <summary>Updates an existing settlement.</summary>
@@ -258,11 +254,7 @@ public class SettlementsController(
             return BadRequest();
 
         Entry created = await entryRepository.CreateAsync(dto.ToDomain(id, GetUserId()));
-        return CreatedAtAction(
-            actionName: nameof(GetEntryAsync),
-            routeValues: new { id = created.SettlementId, entryId = created.Id },
-            value: created.ToDto()
-        );
+        return Created($"api/settlements/{created.SettlementId}/entries/{created.Id}", created.ToDto());
     }
 
     /// <summary>Updates an existing entry within a settlement.</summary>

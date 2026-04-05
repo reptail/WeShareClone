@@ -9,7 +9,7 @@ using WeShareClone.Services;
 namespace WeShareClone.Controllers;
 
 [ApiController]
-[Route("auth/passkey")]
+[Route("api/auth/passkey")]
 public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
 {
     /// <summary>Begins passkey registration by returning credential creation options.</summary>

@@ -6,7 +6,7 @@ using WeShareClone.Dto.Auth;
 namespace WeShareClone.Controllers;
 
 [ApiController]
-[Route("auth/signup")]
+[Route("api/auth/signup")]
 public class SignupController(IAuthService authService) : ControllerBase
 {
     /// <summary>Initiates a signup request for the given email address and display name.</summary>

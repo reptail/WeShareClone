@@ -9,7 +9,7 @@ using WeShareClone.Extensions;
 namespace WeShareClone.Controllers;
 
 [ApiController]
-[Route("users")]
+[Route("api/users")]
 [Authorize]
 public class UsersController(IUserRepository userRepository) : ControllerBase
 {

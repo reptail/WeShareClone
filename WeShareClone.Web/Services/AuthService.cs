@@ -12,7 +12,7 @@ public class AuthService(HttpClient http, AuthStateService authState)
     /// </summary>
     public async Task RequestLoginAsync(string email)
     {
-        await http.PostAsJsonAsync("auth/login", new { email });
+        await http.PostAsJsonAsync("api/auth/login", new { email });
     }
 
     /// <summary>
@@ -21,7 +21,7 @@ public class AuthService(HttpClient http, AuthStateService authState)
     /// </summary>
     public async Task<bool> VerifyCodeAsync(string email, string code)
     {
-        HttpResponseMessage response = await http.PostAsJsonAsync("auth/verify", new { email, code });
+        HttpResponseMessage response = await http.PostAsJsonAsync("api/auth/verify", new { email, code });
 
         if (!response.IsSuccessStatusCode)
         {
@@ -49,7 +49,7 @@ public class AuthService(HttpClient http, AuthStateService authState)
         }
 
         HttpResponseMessage response = await http.PostAsJsonAsync(
-            "auth/refresh",
+            "api/auth/refresh",
             new { refreshToken = authState.RefreshToken }
         );
 
