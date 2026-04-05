@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using WeShareClone.DataAccess.Extensions;
@@ -10,6 +11,22 @@ namespace WeShareClone.DataAccess.Repositories;
 
 public class EntryRepository(Func<SqlConnection> connectionFactory) : IEntryRepository
 {
+    /// <summary>
+    /// Builds a DataTable that matches dbo.EntryDistributionTableType,
+    /// used to pass distributions as a TVP to the MERGE statement.
+    /// </summary>
+    private static DataTable BuildDistributionsTable(IEnumerable<EntryDistribution> distributions)
+    {
+        DataTable table = new();
+        table.Columns.Add("UserId", typeof(int));
+        table.Columns.Add("Factor", typeof(decimal));
+
+        foreach (EntryDistribution dist in distributions)
+            table.Rows.Add(dist.UserId, dist.Factor);
+
+        return table;
+    }
+
     public async Task<Entry[]> GetBySettlementIdAsync(int settlementId)
     {
         using SqlConnection connection = connectionFactory();
@@ -66,18 +83,21 @@ public class EntryRepository(Func<SqlConnection> connectionFactory) : IEntryRepo
                 entry.Value,
                 entry.Currency,
                 entry.AddedBy,
+                entry.DistributionMode,
             },
             transaction: transaction
         );
 
-        foreach (EntryDistribution dist in entry.Distributions)
-        {
-            await connection.ExecuteAsync(
-                sql: SqlScripts.CreateEntryDistribution,
-                param: new { EntryId = row.Id, dist.UserId, dist.Factor },
-                transaction: transaction
-            );
-        }
+        await connection.ExecuteAsync(
+            sql: SqlScripts.UpsertEntryDistributions,
+            param: new
+            {
+                EntryId = row.Id,
+                Distributions = BuildDistributionsTable(entry.Distributions)
+                    .AsTableValuedParameter("dbo.EntryDistributionTableType"),
+            },
+            transaction: transaction
+        );
 
         await transaction.CommitAsync();
         return row.ToDomain(entry.Distributions);
@@ -97,6 +117,7 @@ public class EntryRepository(Func<SqlConnection> connectionFactory) : IEntryRepo
                 entry.Name,
                 entry.Value,
                 entry.Currency,
+                entry.DistributionMode,
             },
             transaction: transaction
         );
@@ -108,19 +129,15 @@ public class EntryRepository(Func<SqlConnection> connectionFactory) : IEntryRepo
         }
 
         await connection.ExecuteAsync(
-            sql: SqlScripts.DeleteEntryDistributionsByEntryId,
-            param: new { EntryId = entry.Id },
+            sql: SqlScripts.UpsertEntryDistributions,
+            param: new
+            {
+                EntryId = entry.Id,
+                Distributions = BuildDistributionsTable(entry.Distributions)
+                    .AsTableValuedParameter("dbo.EntryDistributionTableType"),
+            },
             transaction: transaction
         );
-
-        foreach (EntryDistribution dist in entry.Distributions)
-        {
-            await connection.ExecuteAsync(
-                sql: SqlScripts.CreateEntryDistribution,
-                param: new { EntryId = row.Id, dist.UserId, dist.Factor },
-                transaction: transaction
-            );
-        }
 
         await transaction.CommitAsync();
         return row.ToDomain(entry.Distributions);

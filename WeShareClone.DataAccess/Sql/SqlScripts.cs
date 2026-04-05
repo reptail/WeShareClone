@@ -39,8 +39,7 @@ public static class SqlScripts
 
     public static string GetEntryDistributionsByEntryId      => Load(nameof(GetEntryDistributionsByEntryId));
     public static string GetEntryDistributionsBySettlementId => Load(nameof(GetEntryDistributionsBySettlementId));
-    public static string CreateEntryDistribution             => Load(nameof(CreateEntryDistribution));
-    public static string DeleteEntryDistributionsByEntryId   => Load(nameof(DeleteEntryDistributionsByEntryId));
+    public static string UpsertEntryDistributions            => Load(nameof(UpsertEntryDistributions));
 
     public static string GetUserByEmail                => Load(nameof(GetUserByEmail));
     public static string GetUserById                   => Load(nameof(GetUserById));
