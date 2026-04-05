@@ -8,11 +8,10 @@
     <base href="/" />
     <ResourcePreloader />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link href="@Assets["WeShareClone.Web.styles.css"]" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/@@tailwindcss/browser@4"></script>
-    <style type="text/tailwindcss">
-        @@custom-variant dark (&:where(.dark, .dark *));
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' };
+    </script>
     <ImportMap />
     <HeadOutlet />
 </head>

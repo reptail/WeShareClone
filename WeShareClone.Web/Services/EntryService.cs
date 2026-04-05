@@ -8,7 +8,7 @@ public class EntryService(HttpClient http)
 {
     /// <summary>Returns all entries for the given settlement, ordered by date descending.</summary>
     public async Task<EntryModel[]> GetEntriesAsync(int settlementId)
-        => await http.GetFromJsonAsync<EntryModel[]>($"settlements/{settlementId}/entries") ?? [];
+        => await http.GetFromJsonAsync<EntryModel[]>($"api/settlements/{settlementId}/entries") ?? [];
 
     /// <summary>
     /// Creates a new entry in the given settlement.
@@ -29,7 +29,7 @@ public class EntryService(HttpClient http)
         EntryDistributionModel[] distributions)
     {
         HttpResponseMessage response = await http.PostAsJsonAsync(
-            $"settlements/{settlementId}/entries",
+            $"api/settlements/{settlementId}/entries",
             new
             {
                 name,

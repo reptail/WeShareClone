@@ -3,7 +3,9 @@ using WeShareClone.Web.Services;
 
 WebAssemblyHostBuilder builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-string apiBase = builder.Configuration["ApiBaseUrl"] ?? "/";
+// Use an explicit ApiBaseUrl from config, or fall back to the hosting environment's
+// base address so same-origin API calls resolve correctly when server-hosted.
+string apiBase = builder.Configuration["ApiBaseUrl"] ?? builder.HostEnvironment.BaseAddress;
 
 // Services are registered as singletons so state is shared across all components.
 builder.Services.AddSingleton<LocalStorageService>();
