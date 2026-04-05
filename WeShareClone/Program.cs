@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,6 +11,10 @@ using WeShareClone.Domain.Services;
 using WeShareClone.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Prevent ASP.NET Core from remapping standard JWT claim names (e.g. "sub")
+// to WS-Federation URIs. Claims arrive as-is from the token.
+JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
 
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen(options =>
@@ -31,6 +36,11 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Disable ASP.NET Core's default claim type mapping, which would rename
+        // "sub" → ClaimTypes.NameIdentifier and other standard JWT claims to their
+        // long WS-Federation URN equivalents.
+        options.MapInboundClaims = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
