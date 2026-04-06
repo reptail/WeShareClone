@@ -14,15 +14,20 @@ public class SignupRequestDto
     [Required]
     public string Name { get; init; } = string.Empty;
 
+    /// <summary>Optional invite token. Required when the API is configured for invite-only sign-up.</summary>
+    public string? InviteToken { get; init; }
+
     /// <summary>Initializes a new empty instance of <see cref="SignupRequestDto"/>.</summary>
     public SignupRequestDto() { }
 
     /// <summary>Initializes a new instance of <see cref="SignupRequestDto"/>.</summary>
     /// <param name="email">The user's email address.</param>
     /// <param name="name">The user's display name.</param>
-    public SignupRequestDto(string email, string name)
+    /// <param name="inviteToken">Optional invite token.</param>
+    public SignupRequestDto(string email, string name, string? inviteToken = null)
     {
-        Email = email;
-        Name = name;
+        Email       = email;
+        Name        = name;
+        InviteToken = inviteToken;
     }
 }

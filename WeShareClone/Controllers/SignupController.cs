@@ -7,20 +7,35 @@ namespace WeShareClone.Controllers;
 
 [ApiController]
 [Route("api/auth/signup")]
-public class SignupController(IAuthService authService) : ControllerBase
+public class SignupController(IAuthService authService, IConfiguration configuration) : ControllerBase
 {
     /// <summary>Initiates a signup request for the given email address and display name.</summary>
     /// <remarks>
     /// If the email is already registered, this behaves exactly like a login request — a verification
     /// code is sent to the email. If the email is new, a pending signup is recorded and a code is sent.
     /// Always returns 200 to prevent user enumeration.
+    /// When <c>SignupSettings:InviteToken</c> is configured, the request must supply a matching
+    /// <c>InviteToken</c>; otherwise <c>403 Forbidden</c> is returned.
     /// </remarks>
-    /// <param name="dto">The signup request containing the email address and display name.</param>
+    /// <param name="dto">The signup request containing the email address, display name, and optional invite token.</param>
     /// <response code="200">Request processed successfully.</response>
+    /// <response code="403">Sign-up is invite-only and the supplied token is missing or incorrect.</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> SignupAsync([FromBody] SignupRequestDto dto)
     {
+        string? requiredToken = configuration["SignupSettings:InviteToken"];
+
+        if (!string.IsNullOrEmpty(requiredToken))
+        {
+            if (string.IsNullOrEmpty(dto.InviteToken) ||
+                !string.Equals(dto.InviteToken, requiredToken, StringComparison.Ordinal))
+            {
+                return Forbid();
+            }
+        }
+
         await authService.RequestSignupAsync(
             email: dto.Email,
             name: dto.Name

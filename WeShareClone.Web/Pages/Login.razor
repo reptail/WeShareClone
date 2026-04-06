@@ -18,17 +18,20 @@
 
             @if (!_codeSent)
             {
-                <!-- Tab toggle -->
-                <div class="flex gap-1 bg-zinc-800 rounded-xl p-1">
-                    <button @onclick='() => SetTab("signin")'
-                            class="@TabClass("signin") flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
-                        Sign in
-                    </button>
-                    <button @onclick='() => SetTab("signup")'
-                            class="@TabClass("signup") flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
-                        Sign up
-                    </button>
-                </div>
+                <!-- Tab toggle: only shown when navigating via an invite link -->
+                @if (_inviteToken is not null)
+                {
+                    <div class="flex gap-1 bg-zinc-800 rounded-xl p-1">
+                        <button @onclick='() => SetTab("signin")'
+                                class="@TabClass("signin") flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                            Sign in
+                        </button>
+                        <button @onclick='() => SetTab("signup")'
+                                class="@TabClass("signup") flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                            Sign up
+                        </button>
+                    </div>
+                }
 
                 @if (_tab == "signup")
                 {
@@ -138,6 +141,7 @@
     private string _email = string.Empty;
     private string _name  = string.Empty;
     private string _code  = string.Empty;
+    private string? _inviteToken;
     private bool   _codeSent;
     private bool   _loading;
     private bool   _passkeyLoading;
@@ -152,6 +156,17 @@
         {
             Nav.NavigateTo("/");
             return;
+        }
+
+        // Parse invite token from query string; switch to sign-up tab if present.
+        Uri uri = Nav.ToAbsoluteUri(Nav.Uri);
+        System.Collections.Specialized.NameValueCollection query =
+            System.Web.HttpUtility.ParseQueryString(uri.Query);
+        string? token = query["signup-token"];
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            _inviteToken = token;
+            _tab = "signup";
         }
 
         string? saved = await LocalStorage.GetItemAsync(RememberedEmailKey);
@@ -200,7 +215,7 @@
 
             if (_tab == "signup")
             {
-                await AuthService.SignupAsync(_email.Trim(), _name.Trim());
+                await AuthService.SignupAsync(_email.Trim(), _name.Trim(), _inviteToken);
             }
             else
             {
@@ -208,6 +223,10 @@
             }
 
             _codeSent = true;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            _errorMessage = "Sign-up requires a valid invite link.";
         }
         catch
         {

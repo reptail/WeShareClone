@@ -79,11 +79,15 @@ public class AuthService(HttpClient http, AuthStateService authState)
 
     /// <summary>
     /// Initiates sign-up for a new account. The API sends a 6-digit code to the
-    /// provided email address.
+    /// provided email address. Pass <paramref name="inviteToken"/> when the API is
+    /// configured for invite-only sign-up.
     /// </summary>
-    public async Task SignupAsync(string email, string name)
+    public async Task SignupAsync(string email, string name, string? inviteToken = null)
     {
-        HttpResponseMessage response = await http.PostAsJsonAsync("api/auth/signup", new { email, name });
+        HttpResponseMessage response = await http.PostAsJsonAsync(
+            "api/auth/signup",
+            new { email, name, inviteToken }
+        );
         response.EnsureSuccessStatusCode();
     }
 
