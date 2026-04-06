@@ -142,8 +142,8 @@ public class AuthService(
 
     private async Task GenerateAndSendVerificationCodeAsync(string email)
     {
-        int code = Random.Shared.Next(100_000, 1_000_000);
-        string codeString = code.ToString();
+        // TODO: Remove — fixed dev code, replace with: int code = Random.Shared.Next(100_000, 1_000_000);
+        const string codeString = "123456";
         string codeHash = BCrypt.Net.BCrypt.HashPassword(codeString);
         DateTime expiresAtUtc = DateTime.UtcNow.AddMinutes(VERIFICATION_CODE_EXPIRY_MINUTES);
 

@@ -223,6 +223,7 @@
             }
 
             _codeSent = true;
+            _code = "123456"; // TODO: Remove — auto-fill dev code
         }
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
         {
