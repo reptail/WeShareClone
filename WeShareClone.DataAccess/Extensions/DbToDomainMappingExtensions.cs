@@ -114,4 +114,15 @@ public static class DbToDomainMappingExtensions
                 ExpiresAtUtc: db.ExpiresAtUtc
             );
     }
+
+    extension(DbExchangeRate db)
+    {
+        public ExchangeRate ToDomain()
+            => new(
+                Date: db.Date,
+                Currency: db.Currency,
+                Rate: db.Rate,
+                InsertedAtUtc: db.InsertedAtUtc
+            );
+    }
 }

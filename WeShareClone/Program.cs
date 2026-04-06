@@ -66,8 +66,15 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IPendingSignupRepository, PendingSignupRepository>();
 builder.Services.AddScoped<IPasskeyCredentialRepository, PasskeyCredentialRepository>();
 builder.Services.AddScoped<IPasskeyChallengeRepository, PasskeyChallengeRepository>();
+builder.Services.AddScoped<IExchangeRateRepository, ExchangeRateRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasskeyService, PasskeyService>();
+builder.Services.AddScoped<IExchangeRateService, ExchangeRateService>();
+
+builder.Services.AddHttpClient("Nationalbanken", client =>
+{
+    client.BaseAddress = new Uri("https://www.nationalbanken.dk/api/");
+});
 
 // Fido2NetLib's Fido2 constructor requires Fido2Configuration directly, not IOptions<T>.
 Fido2Configuration fido2Config = builder.Configuration.GetSection("Fido2").Get<Fido2Configuration>() ?? new Fido2Configuration();

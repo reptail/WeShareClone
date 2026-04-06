@@ -1,5 +1,6 @@
 using WeShareClone.Domain.Models;
 using WeShareClone.Dto.Entries;
+using WeShareClone.Dto.ExchangeRates;
 using WeShareClone.Dto.Settlements;
 using WeShareClone.Dto.Users;
 
@@ -51,6 +52,16 @@ public static class DomainToDtoMappingExtensions
                 email: user.Email,
                 name: user.Name,
                 role: user.Role.ToString()
+            );
+    }
+
+    extension(ExchangeRate rate)
+    {
+        public ExchangeRateDto ToDto()
+            => new(
+                Date: rate.Date,
+                Currency: rate.Currency,
+                Rate: rate.Rate
             );
     }
 }
