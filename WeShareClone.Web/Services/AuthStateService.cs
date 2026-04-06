@@ -18,6 +18,7 @@ public class AuthStateService(LocalStorageService localStorage)
     public int UserId { get; private set; }
     public string UserName { get; private set; } = string.Empty;
     public string UserEmail { get; private set; } = string.Empty;
+    public bool IsAdmin { get; private set; }
     public bool IsAuthenticated => AccessToken is not null;
 
     /// <summary>Raised whenever auth state changes so components can re-render.</summary>
@@ -55,6 +56,7 @@ public class AuthStateService(LocalStorageService localStorage)
         UserId = 0;
         UserName = string.Empty;
         UserEmail = string.Empty;
+        IsAdmin = false;
         OnChange?.Invoke();
     }
 
@@ -77,5 +79,8 @@ public class AuthStateService(LocalStorageService localStorage)
         UserName = name ?? string.Empty;
         UserEmail = email ?? string.Empty;
         AccessTokenExpiresAtUtc = jwt.ValidTo == DateTime.MinValue ? null : jwt.ValidTo;
+
+        string? role = jwt.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+        IsAdmin = string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase);
     }
 }

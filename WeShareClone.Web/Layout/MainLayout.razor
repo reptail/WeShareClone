@@ -45,6 +45,15 @@
                                 </p>
                             }
 
+                            @if (AuthState.IsAdmin)
+                            {
+                                <button @onclick="CopyInviteLinkAsync"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-2">
+                                    <span>🔗</span>
+                                    <span>@(_inviteLinkStatus ?? "Copy invite link")</span>
+                                </button>
+                            }
+
                             <button @onclick="LogoutAsync"
                                     class="w-full text-left px-4 py-2.5 text-sm text-zinc-400 hover:bg-zinc-800 transition-colors cursor-pointer">
                                 Sign out
@@ -66,6 +75,7 @@
     private bool _passkeyBusy;
     private string? _passkeyStatus;
     private bool _passkeyError;
+    private string? _inviteLinkStatus;
 
     private void ToggleMenu() => _menuOpen = !_menuOpen;
     private void CloseMenu()  => _menuOpen = false;
@@ -114,6 +124,36 @@
         finally
         {
             _passkeyBusy = false;
+        }
+    }
+
+    private async Task CopyInviteLinkAsync()
+    {
+        try
+        {
+            // Strip trailing JSON quotes if the API returns a quoted string
+            string? raw = await AuthService.GetInviteTokenAsync();
+            string? token = raw?.Trim('"');
+
+            if (string.IsNullOrEmpty(token))
+            {
+                _inviteLinkStatus = "No invite token configured";
+                return;
+            }
+
+            string link = $"{Nav.BaseUri}login?signup-token={Uri.EscapeDataString(token)}";
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", link);
+            _inviteLinkStatus = "✓ Copied!";
+        }
+        catch
+        {
+            _inviteLinkStatus = "Failed to copy";
+        }
+        finally
+        {
+            await Task.Delay(2000);
+            _inviteLinkStatus = null;
+            StateHasChanged();
         }
     }
 

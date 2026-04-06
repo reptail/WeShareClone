@@ -74,6 +74,23 @@ public class AuthService(HttpClient http, AuthStateService authState)
     }
 
     // -------------------------------------------------------------------------
+    // Admin
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns the configured sign-up invite token (admin only).
+    /// Returns <c>null</c> if no token is configured or the user is not an admin.
+    /// </summary>
+    public async Task<string?> GetInviteTokenAsync()
+    {
+        HttpResponseMessage response = await http.GetAsync("api/admin/invite-token");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    // -------------------------------------------------------------------------
     // Sign-up
     // -------------------------------------------------------------------------
 
