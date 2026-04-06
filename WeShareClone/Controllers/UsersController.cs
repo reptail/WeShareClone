@@ -33,4 +33,18 @@ public class UsersController(IUserRepository userRepository) : ControllerBase
 
         return Ok(updated.ToDto());
     }
+
+    /// <summary>Searches for users by name or email (partial, case-insensitive). Returns up to 10 results.</summary>
+    /// <param name="q">Search query matched against name and email.</param>
+    /// <returns>Matching users.</returns>
+    /// <response code="200">Returns matching users (may be empty).</response>
+    /// <response code="401">User is not authenticated.</response>
+    [HttpGet("search")]
+    [ProducesResponseType<UserDto[]>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<UserDto[]>> SearchAsync([FromQuery] string q)
+    {
+        User[] users = await userRepository.SearchAsync(q);
+        return Ok(users.Select(u => u.ToDto()).ToArray());
+    }
 }

@@ -24,6 +24,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SettlementService>();
 builder.Services.AddScoped<EntryService>();
 builder.Services.AddScoped<ExchangeRateService>();
+builder.Services.AddScoped<UserService>();
 
 WebAssemblyHost host = builder.Build();
 

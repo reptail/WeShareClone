@@ -32,4 +32,15 @@ public class SettlementService(HttpClient http)
     /// <summary>Returns all participants (users) in a settlement.</summary>
     public async Task<UserModel[]> GetParticipantsAsync(int settlementId)
         => await http.GetFromJsonAsync<UserModel[]>($"api/settlements/{settlementId}/participants") ?? [];
+
+    /// <summary>Adds a user to a settlement by user ID. Returns true on success.</summary>
+    public async Task<bool> AddUserAsync(int settlementId, int userId)
+    {
+        HttpResponseMessage response = await http.PostAsJsonAsync(
+            $"api/settlements/{settlementId}/users",
+            new { userId }
+        );
+
+        return response.IsSuccessStatusCode;
+    }
 }

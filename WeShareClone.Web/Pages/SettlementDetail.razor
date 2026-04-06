@@ -57,7 +57,25 @@ else
             }
         </div>
 
-        <!-- Entry timeline -->
+        <!-- Participants -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 space-y-2">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-medium text-zinc-400 uppercase tracking-wide">Participants</p>
+                <button @onclick="() => _showAddParticipant = true"
+                        class="text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
+                    + Add
+                </button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @foreach (UserModel participant in _participants)
+                {
+                    <span class="bg-zinc-800 border border-zinc-700 rounded-full px-3 py-1 text-xs text-zinc-300">
+                        @participant.Name
+                    </span>
+                }
+            </div>
+        </div>
+
         @if (_entries.Length == 0)
         {
             <div class="text-center py-12 text-zinc-500 text-sm">No entries yet. Add the first one!</div>
@@ -90,6 +108,14 @@ else
                        OnClose="() => _showAddEntry = false"
                        OnCreated="OnEntryCreated" />
     }
+
+    @if (_showAddParticipant)
+    {
+        <AddParticipantModal SettlementId="_settlement.Id"
+                             ExistingParticipants="_participants"
+                             OnClose="() => _showAddParticipant = false"
+                             OnAdded="OnParticipantAdded" />
+    }
 }
 
 @code {
@@ -101,6 +127,7 @@ else
     private ExchangeRateModel[] _exchangeRates = [];
     private bool _loading = true;
     private bool _showAddEntry;
+    private bool _showAddParticipant;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,6 +164,12 @@ else
         _showAddEntry = false;
         // Refresh entries list
         _entries = await EntryService.GetEntriesAsync(Id);
+    }
+
+    private async Task OnParticipantAdded(UserModel user)
+    {
+        _showAddParticipant = false;
+        _participants = await SettlementService.GetParticipantsAsync(Id);
     }
 
     /// <summary>

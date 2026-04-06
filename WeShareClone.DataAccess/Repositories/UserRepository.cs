@@ -30,6 +30,16 @@ public class UserRepository(Func<SqlConnection> connectionFactory) : IUserReposi
         return row?.ToDomain();
     }
 
+    public async Task<User[]> SearchAsync(string query)
+    {
+        using SqlConnection connection = connectionFactory();
+        IEnumerable<DbUser> rows = await connection.QueryAsync<DbUser>(
+            sql: SqlScripts.SearchUsers,
+            param: new { Query = query }
+        );
+        return rows.Select(r => r.ToDomain()).ToArray();
+    }
+
     public async Task<User> CreateAsync(string email, string name)
     {
         using SqlConnection connection = connectionFactory();

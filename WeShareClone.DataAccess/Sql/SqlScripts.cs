@@ -45,6 +45,7 @@ public static class SqlScripts
     public static string GetUserById                   => Load(nameof(GetUserById));
     public static string CreateUser                    => Load(nameof(CreateUser));
     public static string UpdateUserName                => Load(nameof(UpdateUserName));
+    public static string SearchUsers                   => Load(nameof(SearchUsers));
 
     public static string UpsertVerificationCode        => Load(nameof(UpsertVerificationCode));
     public static string GetVerificationCodeByEmail    => Load(nameof(GetVerificationCodeByEmail));
