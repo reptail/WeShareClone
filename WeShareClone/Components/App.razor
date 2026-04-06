@@ -13,6 +13,11 @@
         tailwind.config = { darkMode: 'class' };
         function scrollIntoView(element) { element.scrollIntoView({ behavior: 'smooth' }); }
     </script>
+    <style>
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+        input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+    </style>
     <ImportMap />
     <HeadOutlet />
 </head>
