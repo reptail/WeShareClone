@@ -1,0 +1,158 @@
+@page "/account/passkeys"
+@inject AuthStateService AuthState
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Passkeys – WeShare</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    return;
+}
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-xl font-semibold">Passkeys</h1>
+        <button @onclick="AddPasskeyAsync"
+                disabled="@_adding"
+                class="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors cursor-pointer">
+            @(_adding ? "Registering…" : "+ Add passkey")
+        </button>
+    </div>
+
+    @if (_addError is not null)
+    {
+        <p class="text-sm text-red-400">@_addError</p>
+    }
+
+    @if (_addSuccess)
+    {
+        <p class="text-sm text-green-400">✓ Passkey registered successfully.</p>
+    }
+
+    @if (_loading)
+    {
+        <p class="text-sm text-zinc-500">Loading…</p>
+    }
+    else if (_passkeys.Length == 0)
+    {
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center text-sm text-zinc-500">
+            No passkeys registered yet. Add one to sign in without a code.
+        </div>
+    }
+    else
+    {
+        <div class="space-y-2">
+            @foreach (PasskeyCredentialModel key in _passkeys)
+            {
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="text-xl">🔑</span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-zinc-200 truncate">Passkey</p>
+                            <p class="text-xs text-zinc-500">Registered @key.CreatedAtUtc.ToLocalTime().ToString("d MMM yyyy, HH:mm")</p>
+                        </div>
+                    </div>
+                    <button @onclick="() => DeleteAsync(key.Id)"
+                            disabled="@_deletingId.Contains(key.Id)"
+                            class="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0">
+                        @(_deletingId.Contains(key.Id) ? "Removing…" : "Remove")
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private PasskeyCredentialModel[] _passkeys = [];
+    private bool _loading = true;
+    private bool _adding;
+    private bool _addSuccess;
+    private string? _addError;
+    private HashSet<int> _deletingId = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        try
+        {
+            _passkeys = await AuthService.GetPasskeysAsync();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task AddPasskeyAsync()
+    {
+        _addError   = null;
+        _addSuccess = false;
+        _adding     = true;
+
+        try
+        {
+            string? optionsJson = await AuthService.PasskeyRegisterBeginAsync();
+
+            if (optionsJson is null)
+            {
+                _addError = "Could not start registration. Please try again.";
+                return;
+            }
+
+            string attestationJson = await JS.InvokeAsync<string>("startPasskeyRegistration", optionsJson);
+            bool success = await AuthService.PasskeyRegisterCompleteAsync(attestationJson);
+
+            if (success)
+            {
+                _addSuccess = true;
+                await LoadAsync();
+            }
+            else
+            {
+                _addError = "Registration failed. Please try again.";
+            }
+        }
+        catch (JSException)
+        {
+            _addError = "Cancelled or not supported by this device.";
+        }
+        catch
+        {
+            _addError = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _adding = false;
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        _deletingId.Add(id);
+
+        try
+        {
+            bool success = await AuthService.DeletePasskeyAsync(id);
+            if (success)
+                _passkeys = _passkeys.Where(k => k.Id != id).ToArray();
+        }
+        finally
+        {
+            _deletingId.Remove(id);
+        }
+    }
+}

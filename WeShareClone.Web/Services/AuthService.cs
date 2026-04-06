@@ -216,4 +216,25 @@ public class AuthService(HttpClient http, AuthStateService authState)
 
         return response.IsSuccessStatusCode;
     }
+
+    // -------------------------------------------------------------------------
+    // Passkey credential management
+    // -------------------------------------------------------------------------
+
+    /// <summary>Returns all passkeys registered for the authenticated user.</summary>
+    public async Task<PasskeyCredentialModel[]> GetPasskeysAsync()
+    {
+        HttpResponseMessage response = await http.GetAsync("api/auth/passkey/credentials");
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<PasskeyCredentialModel[]>()
+            ?? [];
+    }
+
+    /// <summary>Deletes a registered passkey by its database identifier.</summary>
+    public async Task<bool> DeletePasskeyAsync(int id)
+    {
+        HttpResponseMessage response = await http.DeleteAsync($"api/auth/passkey/credentials/{id}");
+        return response.IsSuccessStatusCode;
+    }
 }
