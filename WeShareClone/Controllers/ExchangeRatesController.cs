@@ -16,19 +16,17 @@ public class ExchangeRatesController(
     IExchangeRateRepository exchangeRateRepository,
     IExchangeRateService exchangeRateService) : ControllerBase
 {
-    /// <summary>
-    /// Returns exchange rates for the most recent available closing date, or for a
-    /// specific date when the <paramref name="date"/> query parameter is provided.
-    /// </summary>
-    /// <param name="date">Optional closing date in YYYY-MM-DD format.</param>
+    /// <summary>Returns the current revision of all exchange rates.</summary>
+    /// <param name="currencies">Optional comma-separated list of currency codes to filter by (e.g. <c>USD,EUR</c>). When omitted, all currencies are returned.</param>
     [HttpGet]
     [ProducesResponseType<ExchangeRateDto[]>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ExchangeRateDto[]>> GetAsync([FromQuery] DateOnly? date)
+    public async Task<ActionResult<ExchangeRateDto[]>> GetAsync([FromQuery] string? currencies = null)
     {
-        ExchangeRate[] rates = date.HasValue
-            ? await exchangeRateRepository.GetByDateAsync(date.Value)
-            : await exchangeRateRepository.GetLatestAsync();
+        IEnumerable<string>? currencyFilter = currencies?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        ExchangeRate[] rates = await exchangeRateRepository.GetLatestAsync(currencyFilter);
 
         if (rates.Length == 0)
             return NotFound();

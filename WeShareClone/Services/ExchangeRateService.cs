@@ -22,7 +22,7 @@ public class ExchangeRateService(
 
         ExchangeRate[] rates = ParseRates(xml);
 
-        await exchangeRateRepository.UpsertManyAsync(rates);
+        await exchangeRateRepository.InsertManyIfChangedAsync(rates);
 
         return rates;
     }
@@ -40,6 +40,7 @@ public class ExchangeRateService(
         DateOnly closingDate = DateOnly.Parse(closingDateRaw, CultureInfo.InvariantCulture);
 
         DateTime fetchedAtUtc = DateTime.UtcNow;
+        DateTime maxValidTo = new(9999, 12, 31, 23, 59, 59, 999, DateTimeKind.Utc);
         CultureInfo danishCulture = CultureInfo.GetCultureInfo("da-DK");
 
         return dailyRates
@@ -58,7 +59,8 @@ public class ExchangeRateService(
                     Date: closingDate,
                     Currency: code,
                     Rate: rate,
-                    InsertedAtUtc: fetchedAtUtc
+                    ValidFromUtc: fetchedAtUtc,
+                    ValidToUtc: maxValidTo
                 );
             })
             .ToArray();

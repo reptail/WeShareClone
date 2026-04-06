@@ -66,9 +66,8 @@ public static class SqlScripts
     public static string UpsertPasskeyChallenge              => Load(nameof(UpsertPasskeyChallenge));
     public static string DeletePasskeyChallengeByEmailAndType => Load(nameof(DeletePasskeyChallengeByEmailAndType));
 
-    public static string GetLatestExchangeRates  => Load(nameof(GetLatestExchangeRates));
-    public static string GetExchangeRatesByDate  => Load(nameof(GetExchangeRatesByDate));
-    public static string UpsertExchangeRate      => Load(nameof(UpsertExchangeRate));
+    public static string GetLatestExchangeRates      => Load(nameof(GetLatestExchangeRates));
+    public static string InsertExchangeRateIfChanged => Load(nameof(InsertExchangeRateIfChanged));
 
     private static string Load(string key)
     {

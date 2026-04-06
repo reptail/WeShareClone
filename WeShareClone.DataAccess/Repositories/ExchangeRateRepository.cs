@@ -1,3 +1,4 @@
+using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using WeShareClone.DataAccess.Extensions;
@@ -10,39 +11,47 @@ namespace WeShareClone.DataAccess.Repositories;
 
 public class ExchangeRateRepository(Func<SqlConnection> connectionFactory) : IExchangeRateRepository
 {
-    public async Task<ExchangeRate[]> GetLatestAsync()
+    public async Task<ExchangeRate[]> GetLatestAsync(IEnumerable<string>? currencies = null)
     {
+        DataTable currenciesTvp = BuildStringValuesTvp(currencies);
+
         using SqlConnection connection = connectionFactory();
         IEnumerable<DbExchangeRate> rows = await connection.QueryAsync<DbExchangeRate>(
-            SqlScripts.GetLatestExchangeRates
+            SqlScripts.GetLatestExchangeRates,
+            new { currencies = currenciesTvp.AsTableValuedParameter("dbo.StringValues") }
         );
         return rows.Select(r => r.ToDomain()).ToArray();
     }
 
-    public async Task<ExchangeRate[]> GetByDateAsync(DateOnly date)
-    {
-        using SqlConnection connection = connectionFactory();
-        IEnumerable<DbExchangeRate> rows = await connection.QueryAsync<DbExchangeRate>(
-            SqlScripts.GetExchangeRatesByDate,
-            new { Date = date }
-        );
-        return rows.Select(r => r.ToDomain()).ToArray();
-    }
-
-    public async Task UpsertManyAsync(IEnumerable<ExchangeRate> rates)
+    public async Task InsertManyIfChangedAsync(IEnumerable<ExchangeRate> rates)
     {
         using SqlConnection connection = connectionFactory();
         foreach (ExchangeRate rate in rates)
         {
             await connection.ExecuteAsync(
-                SqlScripts.UpsertExchangeRate,
+                SqlScripts.InsertExchangeRateIfChanged,
                 new
                 {
-                    Date     = rate.Date,
-                    Currency = rate.Currency,
-                    Rate     = rate.Rate,
+                    Currency     = rate.Currency,
+                    Rate         = rate.Rate,
+                    Date         = rate.Date,
+                    ValidFromUtc = rate.ValidFromUtc,
                 }
             );
         }
+    }
+
+    private static DataTable BuildStringValuesTvp(IEnumerable<string>? values)
+    {
+        DataTable table = new();
+        table.Columns.Add("Value", typeof(string));
+
+        if (values is not null)
+        {
+            foreach (string value in values)
+                table.Rows.Add(value);
+        }
+
+        return table;
     }
 }

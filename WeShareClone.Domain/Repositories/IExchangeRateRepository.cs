@@ -4,15 +4,13 @@ namespace WeShareClone.Domain.Repositories;
 
 public interface IExchangeRateRepository
 {
-    /// <summary>Returns all exchange rates for the most recent available closing date.</summary>
-    Task<ExchangeRate[]> GetLatestAsync();
-
-    /// <summary>Returns all exchange rates for the specified closing date.</summary>
-    Task<ExchangeRate[]> GetByDateAsync(DateOnly date);
+    /// <summary>Returns the current revision of each exchange rate.</summary>
+    /// <param name="currencies">Optional filter; when null or empty, all currencies are returned.</param>
+    Task<ExchangeRate[]> GetLatestAsync(IEnumerable<string>? currencies = null);
 
     /// <summary>
-    /// Inserts or updates exchange rates. Existing records for the same (Date, Currency)
-    /// pair are overwritten.
+    /// For each rate, inserts a new revision only when the <see cref="ExchangeRate.Rate"/>
+    /// value has changed since the last stored revision for that currency.
     /// </summary>
-    Task UpsertManyAsync(IEnumerable<ExchangeRate> rates);
+    Task InsertManyIfChangedAsync(IEnumerable<ExchangeRate> rates);
 }

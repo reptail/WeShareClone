@@ -122,7 +122,8 @@ public static class DbToDomainMappingExtensions
                 Date: db.Date,
                 Currency: db.Currency,
                 Rate: db.Rate,
-                InsertedAtUtc: db.InsertedAtUtc
+                ValidFromUtc: db.ValidFromUtc,
+                ValidToUtc: db.ValidToUtc
             );
     }
 }
