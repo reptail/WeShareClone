@@ -6,6 +6,7 @@
 @inject EntryService EntryService
 @inject ExchangeRateService ExchangeRateService
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>@(_settlement?.Name ?? "Settlement") – WeShare</PageTitle>
 
@@ -83,7 +84,7 @@ else
         else
         {
             <div class="space-y-2">
-                @foreach (EntryModel entry in _entries.OrderByDescending(e => e.AddedAtUtc))
+                @foreach (EntryModel entry in _entries.OrderBy(e => e.AddedAtUtc))
                 {
                     <EntryCard Entry="entry"
                                CurrentUserId="AuthState.UserId"
@@ -93,6 +94,8 @@ else
                 }
             </div>
         }
+
+        <div @ref="_bottomAnchor"></div>
     </div>
 
     <!-- Add entry FAB -->
@@ -128,6 +131,7 @@ else
     private bool _loading = true;
     private bool _showAddEntry;
     private bool _showAddParticipant;
+    private ElementReference _bottomAnchor;
 
     protected override async Task OnInitializedAsync()
     {
@@ -139,6 +143,17 @@ else
 
         await LoadAsync();
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scrollToBottom)
+        {
+            _scrollToBottom = false;
+            await JS.InvokeVoidAsync("scrollIntoView", _bottomAnchor);
+        }
+    }
+
+    private bool _scrollToBottom;
 
     private async Task LoadAsync()
     {
@@ -157,13 +172,15 @@ else
         _exchangeRates = await ratesTask;
 
         _loading = false;
+        _scrollToBottom = true;
     }
 
     private async Task OnEntryCreated(EntryModel entry)
     {
         _showAddEntry = false;
-        // Refresh entries list
+        // Refresh entries list and scroll to the new entry at the bottom
         _entries = await EntryService.GetEntriesAsync(Id);
+        _scrollToBottom = true;
     }
 
     private async Task OnParticipantAdded(UserModel user)
