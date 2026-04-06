@@ -2,6 +2,7 @@
 @inject AuthService AuthService
 @inject AuthStateService AuthState
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Sign in – WeShare</PageTitle>
 
@@ -16,7 +17,30 @@
 
             @if (!_codeSent)
             {
-                <!-- Step 1: email input -->
+                <!-- Tab toggle -->
+                <div class="flex gap-1 bg-zinc-800 rounded-xl p-1">
+                    <button @onclick='() => SetTab("signin")'
+                            class="@TabClass("signin") flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                        Sign in
+                    </button>
+                    <button @onclick='() => SetTab("signup")'
+                            class="@TabClass("signup") flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                        Sign up
+                    </button>
+                </div>
+
+                @if (_tab == "signup")
+                {
+                    <!-- Sign-up: Name field -->
+                    <div class="space-y-1">
+                        <label class="text-sm text-zinc-400">Your name</label>
+                        <input @bind="_name" @bind:event="oninput"
+                               placeholder="Jane Smith"
+                               class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                    </div>
+                }
+
+                <!-- Email field (shared) -->
                 <div class="space-y-1">
                     <label class="text-sm text-zinc-400">Email address</label>
                     <input @bind="_email" @bind:event="oninput"
@@ -31,15 +55,42 @@
                     <p class="text-sm text-red-400">@_errorMessage</p>
                 }
 
-                <button @onclick="RequestCodeAsync"
-                        disabled="@_loading"
-                        class="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
-                    @(_loading ? "Sending…" : "Send code")
-                </button>
+                @if (_tab == "signin")
+                {
+                    <!-- Sign-in: Send code + Passkey side by side -->
+                    <div class="flex gap-2">
+                        <button @onclick="RequestCodeAsync"
+                                disabled="@_loading"
+                                class="flex-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                            @(_loading && !_passkeyLoading ? "Sending…" : "Send code")
+                        </button>
+                        <button @onclick="PasskeyLoginAsync"
+                                disabled="@(_loading || string.IsNullOrWhiteSpace(_email))"
+                                class="flex-1 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-300 font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer flex items-center justify-center gap-1.5">
+                            @if (_passkeyLoading)
+                            {
+                                <span>Waiting…</span>
+                            }
+                            else
+                            {
+                                <span>🔑</span><span>Passkey</span>
+                            }
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- Sign-up: full-width Send code -->
+                    <button @onclick="RequestCodeAsync"
+                            disabled="@_loading"
+                            class="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                        @(_loading ? "Sending…" : "Send code")
+                    </button>
+                }
             }
             else
             {
-                <!-- Step 2: OTP code input -->
+                <!-- Step 2: OTP code input (shared between sign-in and sign-up) -->
                 <div class="space-y-1">
                     <label class="text-sm text-zinc-400">Verification code</label>
                     <p class="text-xs text-zinc-500">A 6-digit code was sent to <strong class="text-zinc-300">@_email</strong></p>
@@ -63,7 +114,7 @@
                     @(_loading ? "Verifying…" : "Verify code")
                 </button>
 
-                <button @onclick="() => { _codeSent = false; _code = string.Empty; _errorMessage = null; }"
+                <button @onclick="ResetToEmailStep"
                         class="w-full text-sm text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
                     ← Change email
                 </button>
@@ -73,10 +124,13 @@
 </div>
 
 @code {
+    private string _tab   = "signin";
     private string _email = string.Empty;
-    private string _code = string.Empty;
-    private bool _codeSent;
-    private bool _loading;
+    private string _name  = string.Empty;
+    private string _code  = string.Empty;
+    private bool   _codeSent;
+    private bool   _loading;
+    private bool   _passkeyLoading;
     private string? _errorMessage;
 
     protected override void OnInitialized()
@@ -85,6 +139,20 @@
         {
             Nav.NavigateTo("/");
         }
+    }
+
+    private void SetTab(string tab)
+    {
+        _tab          = tab;
+        _errorMessage = null;
+        _code         = string.Empty;
+    }
+
+    private void ResetToEmailStep()
+    {
+        _codeSent     = false;
+        _code         = string.Empty;
+        _errorMessage = null;
     }
 
     private async Task RequestCodeAsync()
@@ -97,11 +165,25 @@
             return;
         }
 
+        if (_tab == "signup" && string.IsNullOrWhiteSpace(_name))
+        {
+            _errorMessage = "Please enter your name.";
+            return;
+        }
+
         _loading = true;
 
         try
         {
-            await AuthService.RequestLoginAsync(_email.Trim());
+            if (_tab == "signup")
+            {
+                await AuthService.SignupAsync(_email.Trim(), _name.Trim());
+            }
+            else
+            {
+                await AuthService.RequestLoginAsync(_email.Trim());
+            }
+
             _codeSent = true;
         }
         catch
@@ -128,7 +210,9 @@
 
         try
         {
-            bool success = await AuthService.VerifyCodeAsync(_email.Trim(), _code.Trim());
+            bool success = _tab == "signup"
+                ? await AuthService.VerifySignupAsync(_email.Trim(), _code.Trim())
+                : await AuthService.VerifyCodeAsync(_email.Trim(), _code.Trim());
 
             if (success)
             {
@@ -149,6 +233,50 @@
         }
     }
 
+    private async Task PasskeyLoginAsync()
+    {
+        _errorMessage   = null;
+        _passkeyLoading = true;
+        _loading        = true;
+
+        try
+        {
+            string? optionsJson = await AuthService.PasskeyBeginLoginAsync(_email.Trim());
+
+            if (optionsJson is null)
+            {
+                _errorMessage = "No passkey registered for this email address.";
+                return;
+            }
+
+            string assertionJson = await JS.InvokeAsync<string>("startPasskeyAuthentication", optionsJson);
+
+            bool success = await AuthService.PasskeyCompleteLoginAsync(assertionJson);
+
+            if (success)
+            {
+                Nav.NavigateTo("/");
+            }
+            else
+            {
+                _errorMessage = "Passkey verification failed. Please try again.";
+            }
+        }
+        catch (JSException)
+        {
+            _errorMessage = "Passkey authentication was cancelled or is not supported.";
+        }
+        catch
+        {
+            _errorMessage = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _loading        = false;
+            _passkeyLoading = false;
+        }
+    }
+
     private async Task OnEmailKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter") await RequestCodeAsync();
@@ -158,4 +286,9 @@
     {
         if (e.Key == "Enter") await VerifyCodeAsync();
     }
+
+    private string TabClass(string tab) =>
+        _tab == tab
+            ? "bg-zinc-700 text-zinc-100"
+            : "text-zinc-400 hover:text-zinc-200";
 }
