@@ -14,6 +14,7 @@ public class AuthStateService(LocalStorageService localStorage)
 
     public string? AccessToken { get; private set; }
     public string? RefreshToken { get; private set; }
+    public DateTime? AccessTokenExpiresAtUtc { get; private set; }
     public int UserId { get; private set; }
     public string UserName { get; private set; } = string.Empty;
     public string UserEmail { get; private set; } = string.Empty;
@@ -50,6 +51,7 @@ public class AuthStateService(LocalStorageService localStorage)
         await localStorage.RemoveItemAsync(RefreshTokenKey);
         AccessToken = null;
         RefreshToken = null;
+        AccessTokenExpiresAtUtc = null;
         UserId = 0;
         UserName = string.Empty;
         UserEmail = string.Empty;
@@ -74,5 +76,6 @@ public class AuthStateService(LocalStorageService localStorage)
         UserId = int.TryParse(sub, out int id) ? id : 0;
         UserName = name ?? string.Empty;
         UserEmail = email ?? string.Empty;
+        AccessTokenExpiresAtUtc = jwt.ValidTo == DateTime.MinValue ? null : jwt.ValidTo;
     }
 }
