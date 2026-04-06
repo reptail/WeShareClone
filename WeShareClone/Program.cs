@@ -1,16 +1,21 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using Dapper;
 using Fido2NetLib;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using WeShareClone.Components;
+using WeShareClone.DataAccess;
 using WeShareClone.DataAccess.Repositories;
 using WeShareClone.Domain.Repositories;
 using WeShareClone.Domain.Services;
 using WeShareClone.Services;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Register Dapper type handlers for types not natively supported.
+SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
 
 // Prevent ASP.NET Core from remapping standard JWT claim names (e.g. "sub")
 // to WS-Federation URIs. Claims arrive as-is from the token.
