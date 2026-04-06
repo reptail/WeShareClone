@@ -1,0 +1,266 @@
+@using WeShareClone.Web.Models
+@inject EntryService EntryService
+
+<!-- Backdrop -->
+<div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-4"
+     @onclick="OnClose">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-4"
+         @onclick:stopPropagation="true">
+        <h2 class="font-semibold text-lg">Edit Entry</h2>
+
+        <div class="space-y-3">
+            <!-- Name -->
+            <div class="space-y-1">
+                <label class="text-sm text-zinc-400">Description</label>
+                <input @bind="_name"
+                       placeholder="Dinner at Noma…"
+                       class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+            </div>
+
+            <!-- Amount + Currency -->
+            <div class="flex gap-2">
+                <div class="space-y-1 flex-1">
+                    <label class="text-sm text-zinc-400">Amount</label>
+                    <input @bind="_value" type="number" min="0.01" step="0.01"
+                           placeholder="0.00"
+                           class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+                <div class="space-y-1 w-28">
+                    <label class="text-sm text-zinc-400">Currency</label>
+                    <select @bind="_currency"
+                            class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-violet-500 transition-colors">
+                        @foreach (string currency in CurrencyCodes.All)
+                        {
+                            <option value="@currency">@currency</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Distribution mode -->
+            <div class="space-y-1">
+                <label class="text-sm text-zinc-400">Split method</label>
+                <div class="flex gap-1 bg-zinc-800 rounded-xl p-1">
+                    @foreach (string mode in new[] { "EvenSplit", "Percentage", "FixedAmount" })
+                    {
+                        <button @onclick="() => SetMode(mode)"
+                                class="@ModeClass(mode) flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer">
+                            @ModeLabel(mode)
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Distribution rows -->
+            @if (_mode != "EvenSplit")
+            {
+                <div class="space-y-2">
+                    <label class="text-sm text-zinc-400">
+                        @(_mode == "Percentage" ? "Percentages (must sum to 100%)" : "Amounts (must sum to total)")
+                    </label>
+                    @foreach (DistributionRow row in _rows)
+                    {
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-zinc-300 flex-1 truncate">@row.Name</span>
+                            <input @bind="row.Input" type="number" min="0" step="0.01"
+                                   placeholder="0"
+                                   class="w-24 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-violet-500 transition-colors text-right" />
+                            @if (_mode == "Percentage")
+                            {
+                                <span class="text-sm text-zinc-500">%</span>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (_errorMessage is not null)
+        {
+            <p class="text-sm text-red-400">@_errorMessage</p>
+        }
+
+        <div class="flex gap-2 pt-1">
+            <button @onclick="OnClose"
+                    class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                Cancel
+            </button>
+            <button @onclick="SubmitAsync"
+                    disabled="@_loading"
+                    class="flex-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                @(_loading ? "Saving…" : "Save changes")
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EntryModel Entry { get; set; } = null!;
+    [Parameter, EditorRequired] public SettlementModel Settlement { get; set; } = null!;
+    [Parameter, EditorRequired] public UserModel[] Participants { get; set; } = [];
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<EntryModel> OnUpdated { get; set; }
+
+    private string _name = string.Empty;
+    private decimal _value;
+    private string _currency = string.Empty;
+    private string _mode = "EvenSplit";
+    private List<DistributionRow> _rows = [];
+    private bool _loading;
+    private string? _errorMessage;
+
+    protected override void OnInitialized()
+    {
+        _name     = Entry.Name;
+        _value    = Entry.Value;
+        _currency = Entry.Currency;
+        _mode     = Entry.DistributionMode;
+
+        _rows = Participants.Select(p =>
+        {
+            EntryDistributionModel? dist = Entry.Distributions
+                .FirstOrDefault(d => d.UserId == p.Id);
+
+            decimal input = _mode switch
+            {
+                "Percentage"  => (dist?.Factor ?? 0) * 100m,
+                "FixedAmount" => dist?.Factor ?? 0,
+                _             => 0
+            };
+
+            return new DistributionRow(p.Id, p.Name) { Input = input };
+        }).ToList();
+    }
+
+    private void SetMode(string mode)
+    {
+        _mode = mode;
+    }
+
+    private async Task SubmitAsync()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _errorMessage = "Please enter a description.";
+            return;
+        }
+
+        if (_value <= 0)
+        {
+            _errorMessage = "Please enter an amount greater than 0.";
+            return;
+        }
+
+        EntryDistributionModel[] distributions = BuildDistributions();
+
+        if (!ValidateDistributions(distributions))
+        {
+            return;
+        }
+
+        _loading = true;
+
+        try
+        {
+            EntryModel? updated = await EntryService.UpdateAsync(
+                Settlement.Id,
+                Entry.Id,
+                _name.Trim(),
+                _value,
+                _currency.Trim().ToUpperInvariant(),
+                _mode,
+                distributions
+            );
+
+            if (updated is not null)
+            {
+                await OnUpdated.InvokeAsync(updated);
+            }
+        }
+        catch
+        {
+            _errorMessage = "Failed to save changes. Please check the values and try again.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private EntryDistributionModel[] BuildDistributions()
+    {
+        if (_mode == "EvenSplit")
+        {
+            return _rows.Select(r => new EntryDistributionModel
+            {
+                UserId = r.UserId,
+                Factor = 1
+            }).ToArray();
+        }
+
+        return _rows
+            .Where(r => r.Input > 0)
+            .Select(r => new EntryDistributionModel
+            {
+                UserId = r.UserId,
+                Factor = _mode == "Percentage" ? r.Input / 100m : r.Input
+            })
+            .ToArray();
+    }
+
+    private bool ValidateDistributions(EntryDistributionModel[] distributions)
+    {
+        if (distributions.Length == 0)
+        {
+            _errorMessage = "At least one participant must have a share.";
+            return false;
+        }
+
+        if (_mode == "Percentage")
+        {
+            decimal sum = distributions.Sum(d => d.Factor);
+
+            if (Math.Abs(sum - 1.0m) > 0.001m)
+            {
+                _errorMessage = $"Percentages must sum to 100% (currently {(sum * 100):N1}%).";
+                return false;
+            }
+        }
+        else if (_mode == "FixedAmount")
+        {
+            decimal sum = distributions.Sum(d => d.Factor);
+
+            if (Math.Abs(sum - _value) > 0.01m)
+            {
+                _errorMessage = $"Fixed amounts must sum to {_value:N2} (currently {sum:N2}).";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private string ModeClass(string mode) =>
+        _mode == mode
+            ? "bg-zinc-700 text-zinc-100"
+            : "text-zinc-400 hover:text-zinc-200";
+
+    private static string ModeLabel(string mode) =>
+        mode switch
+        {
+            "EvenSplit"   => "Even",
+            "Percentage"  => "%",
+            "FixedAmount" => "Fixed",
+            _             => mode
+        };
+
+    /// <summary>Mutable row binding for per-participant distribution inputs.</summary>
+    private class DistributionRow(int userId, string name)
+    {
+        public int UserId { get; } = userId;
+        public string Name { get; } = name;
+        public decimal Input { get; set; }
+    }
+}

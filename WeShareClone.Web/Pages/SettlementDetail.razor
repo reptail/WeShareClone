@@ -90,7 +90,8 @@ else
                                CurrentUserId="AuthState.UserId"
                                Participants="_participants"
                                SettlementCurrency="@(_settlement.Currency)"
-                               ExchangeRates="_exchangeRates" />
+                               ExchangeRates="_exchangeRates"
+                               OnEdit="() => _editingEntry = entry" />
                 }
             </div>
         }
@@ -119,6 +120,15 @@ else
                              OnClose="() => _showAddParticipant = false"
                              OnAdded="OnParticipantAdded" />
     }
+
+    @if (_editingEntry is not null)
+    {
+        <EditEntryModal Entry="_editingEntry"
+                        Settlement="_settlement"
+                        Participants="_participants"
+                        OnClose="() => _editingEntry = null"
+                        OnUpdated="OnEntryUpdated" />
+    }
 }
 
 @code {
@@ -131,6 +141,7 @@ else
     private bool _loading = true;
     private bool _showAddEntry;
     private bool _showAddParticipant;
+    private EntryModel? _editingEntry;
     private ElementReference _bottomAnchor;
 
     protected override async Task OnInitializedAsync()
@@ -179,6 +190,13 @@ else
     {
         _showAddEntry = false;
         // Refresh entries list and scroll to the new entry at the bottom
+        _entries = await EntryService.GetEntriesAsync(Id);
+        _scrollToBottom = true;
+    }
+
+    private async Task OnEntryUpdated(EntryModel entry)
+    {
+        _editingEntry = null;
         _entries = await EntryService.GetEntriesAsync(Id);
         _scrollToBottom = true;
     }

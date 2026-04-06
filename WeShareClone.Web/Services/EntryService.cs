@@ -44,4 +44,33 @@ public class EntryService(HttpClient http)
 
         return await response.Content.ReadFromJsonAsync<EntryModel>();
     }
+
+    /// <summary>
+    /// Updates an existing entry. Distribution factor semantics are the same as <see cref="CreateAsync"/>.
+    /// </summary>
+    public async Task<EntryModel?> UpdateAsync(
+        int settlementId,
+        int entryId,
+        string name,
+        decimal value,
+        string currency,
+        string distributionMode,
+        EntryDistributionModel[] distributions)
+    {
+        HttpResponseMessage response = await http.PutAsJsonAsync(
+            $"api/settlements/{settlementId}/entries/{entryId}",
+            new
+            {
+                name,
+                value,
+                currency,
+                distributionMode,
+                distributions = distributions.Select(d => new { d.UserId, d.Factor })
+            }
+        );
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<EntryModel>();
+    }
 }

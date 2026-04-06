@@ -18,10 +18,17 @@
                 <p class="text-xs @ShareTextClass">Your share: @UserShare.ToString("N2") @Entry.Currency</p>
             }
         </div>
-        <div class="flex @(IsOwnEntry ? "justify-end" : "justify-start")">
+        <div class="flex @(IsOwnEntry ? "justify-end" : "justify-start") items-center gap-2">
             <p class="text-xs text-zinc-500 px-1">
                 @(IsOwnEntry ? "You" : AddedByName) · @Entry.AddedAtUtc.ToLocalTime().ToString("MMM d, HH:mm")
             </p>
+            @if (IsOwnEntry && OnEdit.HasDelegate)
+            {
+                <button @onclick="() => OnEdit.InvokeAsync()"
+                        class="text-xs text-zinc-500 hover:text-violet-400 transition-colors cursor-pointer px-1">
+                    Edit
+                </button>
+            }
         </div>
     </div>
 </div>
@@ -32,6 +39,7 @@
     [Parameter] public UserModel[] Participants { get; set; } = [];
     [Parameter] public string SettlementCurrency { get; set; } = string.Empty;
     [Parameter] public ExchangeRateModel[] ExchangeRates { get; set; } = [];
+    [Parameter] public EventCallback OnEdit { get; set; }
 
     private bool IsOwnEntry => Entry.AddedBy == CurrentUserId;
 
