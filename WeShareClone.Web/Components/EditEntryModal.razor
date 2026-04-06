@@ -52,7 +52,21 @@
             </div>
 
             <!-- Distribution rows -->
-            @if (_mode != "EvenSplit")
+            @if (_mode == "EvenSplit")
+            {
+                <div class="space-y-2">
+                    <label class="text-sm text-zinc-400">Participants (uncheck to exclude)</label>
+                    @foreach (DistributionRow row in _rows)
+                    {
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" @bind="row.Selected"
+                                   class="w-4 h-4 rounded accent-violet-500" />
+                            <span class="text-sm text-zinc-300">@row.Name</span>
+                        </label>
+                    }
+                </div>
+            }
+            else
             {
                 <div class="space-y-2">
                     <label class="text-sm text-zinc-400">
@@ -121,6 +135,10 @@
             EntryDistributionModel? dist = Entry.Distributions
                 .FirstOrDefault(d => d.UserId == p.Id);
 
+            bool selected = _mode == "EvenSplit"
+                ? dist is not null
+                : true;
+
             decimal input = _mode switch
             {
                 "Percentage"  => (dist?.Factor ?? 0) * 100m,
@@ -128,13 +146,51 @@
                 _             => 0
             };
 
-            return new DistributionRow(p.Id, p.Name) { Input = input };
+            return new DistributionRow(p.Id, p.Name) { Selected = selected, Input = input };
         }).ToList();
     }
 
     private void SetMode(string mode)
     {
         _mode = mode;
+        ApplyEvenSplit();
+    }
+
+    /// <summary>
+    /// Pre-fills distribution inputs with an even split when switching to
+    /// Percentage or FixedAmount mode. The remainder goes to the last row
+    /// to ensure the sum is exact.
+    /// </summary>
+    private void ApplyEvenSplit()
+    {
+        if (_mode == "EvenSplit" || _rows.Count == 0) return;
+
+        if (_mode == "Percentage")
+        {
+            decimal each     = Math.Round(100m / _rows.Count, 2);
+            decimal assigned = 0;
+
+            for (int i = 0; i < _rows.Count - 1; i++)
+            {
+                _rows[i].Input  = each;
+                assigned       += each;
+            }
+
+            _rows[^1].Input = Math.Round(100m - assigned, 2);
+        }
+        else if (_mode == "FixedAmount" && _value > 0)
+        {
+            decimal each     = Math.Round(_value / _rows.Count, 2);
+            decimal assigned = 0;
+
+            for (int i = 0; i < _rows.Count - 1; i++)
+            {
+                _rows[i].Input  = each;
+                assigned       += each;
+            }
+
+            _rows[^1].Input = Math.Round(_value - assigned, 2);
+        }
     }
 
     private async Task SubmitAsync()
@@ -193,11 +249,10 @@
     {
         if (_mode == "EvenSplit")
         {
-            return _rows.Select(r => new EntryDistributionModel
-            {
-                UserId = r.UserId,
-                Factor = 1
-            }).ToArray();
+            return _rows
+                .Where(r => r.Selected)
+                .Select(r => new EntryDistributionModel { UserId = r.UserId, Factor = 1 })
+                .ToArray();
         }
 
         return _rows
@@ -261,6 +316,7 @@
     {
         public int UserId { get; } = userId;
         public string Name { get; } = name;
+        public bool Selected { get; set; } = true;
         public decimal Input { get; set; }
     }
 }
