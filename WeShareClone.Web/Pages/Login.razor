@@ -1,6 +1,7 @@
 @page "/login"
 @inject AuthService AuthService
 @inject AuthStateService AuthState
+@inject LocalStorageService LocalStorage
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -49,6 +50,15 @@
                            placeholder="you@example.com"
                            class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
                 </div>
+
+                @if (_tab == "signin")
+                {
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" @bind="_rememberEmail"
+                               class="w-4 h-4 rounded accent-violet-500" />
+                        <span class="text-sm text-zinc-400">Remember email</span>
+                    </label>
+                }
 
                 @if (_errorMessage is not null)
                 {
@@ -131,13 +141,24 @@
     private bool   _codeSent;
     private bool   _loading;
     private bool   _passkeyLoading;
+    private bool   _rememberEmail;
     private string? _errorMessage;
 
-    protected override void OnInitialized()
+    private const string RememberedEmailKey = "remembered_email";
+
+    protected override async Task OnInitializedAsync()
     {
         if (AuthState.IsAuthenticated)
         {
             Nav.NavigateTo("/");
+            return;
+        }
+
+        string? saved = await LocalStorage.GetItemAsync(RememberedEmailKey);
+        if (saved is not null)
+        {
+            _email         = saved;
+            _rememberEmail = true;
         }
     }
 
@@ -175,6 +196,8 @@
 
         try
         {
+            await PersistEmailPreferenceAsync();
+
             if (_tab == "signup")
             {
                 await AuthService.SignupAsync(_email.Trim(), _name.Trim());
@@ -241,6 +264,8 @@
 
         try
         {
+            await PersistEmailPreferenceAsync();
+
             string? optionsJson = await AuthService.PasskeyBeginLoginAsync(_email.Trim());
 
             if (optionsJson is null)
@@ -285,6 +310,20 @@
     private async Task OnCodeKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter") await VerifyCodeAsync();
+    }
+
+    private async Task PersistEmailPreferenceAsync()
+    {
+        if (_tab != "signin") return;
+
+        if (_rememberEmail)
+        {
+            await LocalStorage.SetItemAsync(RememberedEmailKey, _email.Trim());
+        }
+        else
+        {
+            await LocalStorage.RemoveItemAsync(RememberedEmailKey);
+        }
     }
 
     private string TabClass(string tab) =>
