@@ -31,6 +31,24 @@ builder.Services.AddSwaggerGen(options =>
         if (File.Exists(xmlPath))
             options.IncludeXmlComments(xmlPath);
     }
+
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme       = "bearer",
+        BearerFormat = "JWT",
+        In           = Microsoft.OpenApi.ParameterLocation.Header,
+        Description  = "Enter your JWT access token.",
+    });
+
+    options.AddSecurityRequirement(doc => new Microsoft.OpenApi.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", doc, null),
+            []
+        },
+    });
 });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
