@@ -1,3 +1,6 @@
+@using WeShareClone.Web.Models
+@using WeShareClone.Web.Utilities
+
 <div class="flex @(IsOwnEntry ? "justify-end" : "justify-start")">
     <div class="max-w-[80%] space-y-1">
         <div class="@CardClass rounded-2xl px-4 py-3 space-y-1 @(IsOwnEntry ? "rounded-br-sm" : "rounded-bl-sm")">
@@ -6,6 +9,10 @@
                 <span class="text-lg font-semibold">@Entry.Value.ToString("N2")</span>
                 <span class="text-xs text-zinc-400 uppercase">@Entry.Currency</span>
             </div>
+            @if (ConvertedValue is { } converted)
+            {
+                <p class="text-xs text-zinc-500">≈ @converted.ToString("N2") @SettlementCurrency</p>
+            }
             @if (UserShare > 0)
             {
                 <p class="text-xs @ShareTextClass">Your share: @UserShare.ToString("N2") @Entry.Currency</p>
@@ -23,6 +30,8 @@
     [Parameter, EditorRequired] public EntryModel Entry { get; set; } = null!;
     [Parameter, EditorRequired] public int CurrentUserId { get; set; }
     [Parameter] public UserModel[] Participants { get; set; } = [];
+    [Parameter] public string SettlementCurrency { get; set; } = string.Empty;
+    [Parameter] public ExchangeRateModel[] ExchangeRates { get; set; } = [];
 
     private bool IsOwnEntry => Entry.AddedBy == CurrentUserId;
 
@@ -36,6 +45,25 @@
 
     private string AddedByName =>
         Participants.FirstOrDefault(p => p.Id == Entry.AddedBy)?.Name ?? $"User {Entry.AddedBy}";
+
+    /// <summary>
+    /// Returns the entry value converted to the settlement currency, or null when
+    /// no conversion is needed (same currency) or rates are unavailable.
+    /// </summary>
+    private decimal? ConvertedValue
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(SettlementCurrency)
+                || string.Equals(Entry.Currency, SettlementCurrency, StringComparison.OrdinalIgnoreCase)
+                || ExchangeRates.Length == 0)
+            {
+                return null;
+            }
+
+            return CurrencyConverter.Convert(Entry.Value, Entry.Currency, SettlementCurrency, ExchangeRates);
+        }
+    }
 
     private decimal UserShare
     {

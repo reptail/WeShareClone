@@ -1,4 +1,7 @@
+@using WeShareClone.Web.Models
+@using WeShareClone.Web.Utilities
 @inject EntryService EntryService
+@inject ExchangeRateService ExchangeRateService
 
 <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 cursor-pointer hover:bg-zinc-800 transition-colors active:scale-[0.99]"
      @onclick="OnClick">
@@ -42,14 +45,21 @@
     protected override async Task OnParametersSetAsync()
     {
         _balanceLoading = true;
-        EntryModel[] entries = await EntryService.GetEntriesAsync(Settlement.Id);
-        _balance = CalculateBalance(entries);
+
+        Task<EntryModel[]> entriesTask = EntryService.GetEntriesAsync(Settlement.Id);
+        Task<ExchangeRateModel[]> ratesTask = ExchangeRateService.GetLatestAsync();
+
+        await Task.WhenAll(entriesTask, ratesTask);
+
+        ExchangeRateModel[] rates = await ratesTask;
+        _balance = CalculateBalance(await entriesTask, rates);
         _balanceLoading = false;
     }
 
-    private decimal CalculateBalance(EntryModel[] entries)
+    private decimal CalculateBalance(EntryModel[] entries, ExchangeRateModel[] rates)
     {
         decimal total = 0;
+        string settlementCurrency = Settlement.Currency;
 
         foreach (EntryModel entry in entries)
         {
@@ -64,7 +74,10 @@
                 _             => 0
             };
 
-            total += (entry.AddedBy == CurrentUserId ? entry.Value : 0) - userShare;
+            decimal entryValue        = CurrencyConverter.Convert(entry.Value,  entry.Currency, settlementCurrency, rates);
+            decimal shareInSettlement = CurrencyConverter.Convert(userShare,     entry.Currency, settlementCurrency, rates);
+
+            total += (entry.AddedBy == CurrentUserId ? entryValue : 0) - shareInSettlement;
         }
 
         return total;

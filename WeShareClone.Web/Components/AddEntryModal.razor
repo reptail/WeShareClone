@@ -1,3 +1,4 @@
+@using WeShareClone.Web.Models
 @inject EntryService EntryService
 @inject LocalStorageService LocalStorage
 
@@ -25,10 +26,15 @@
                            placeholder="0.00"
                            class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
                 </div>
-                <div class="space-y-1 w-20">
+                <div class="space-y-1 w-28">
                     <label class="text-sm text-zinc-400">Currency</label>
-                    <input @bind="_currency" maxlength="3"
-                           class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 uppercase focus:outline-none focus:border-violet-500 transition-colors" />
+                    <select @bind="_currency"
+                            class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:border-violet-500 transition-colors">
+                        @foreach (string currency in CurrencyCodes.All)
+                        {
+                            <option value="@currency">@currency</option>
+                        }
+                    </select>
                 </div>
             </div>
 

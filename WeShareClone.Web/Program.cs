@@ -23,6 +23,7 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<SettlementService>();
 builder.Services.AddScoped<EntryService>();
+builder.Services.AddScoped<ExchangeRateService>();
 
 WebAssemblyHost host = builder.Build();
 

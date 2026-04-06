@@ -1,7 +1,10 @@
 @page "/settlements/{Id:int}"
+@using WeShareClone.Web.Models
+@using WeShareClone.Web.Utilities
 @inject AuthStateService AuthState
 @inject SettlementService SettlementService
 @inject EntryService EntryService
+@inject ExchangeRateService ExchangeRateService
 @inject NavigationManager Nav
 
 <PageTitle>@(_settlement?.Name ?? "Settlement") – WeShare</PageTitle>
@@ -66,7 +69,9 @@ else
                 {
                     <EntryCard Entry="entry"
                                CurrentUserId="AuthState.UserId"
-                               Participants="_participants" />
+                               Participants="_participants"
+                               SettlementCurrency="@(_settlement.Currency)"
+                               ExchangeRates="_exchangeRates" />
                 }
             </div>
         }
@@ -93,6 +98,7 @@ else
     private SettlementModel? _settlement;
     private EntryModel[] _entries = [];
     private UserModel[] _participants = [];
+    private ExchangeRateModel[] _exchangeRates = [];
     private bool _loading = true;
     private bool _showAddEntry;
 
@@ -111,15 +117,17 @@ else
     {
         _loading = true;
 
-        Task<SettlementModel?> settlementTask = SettlementService.GetByIdAsync(Id);
-        Task<EntryModel[]> entriesTask = EntryService.GetEntriesAsync(Id);
-        Task<UserModel[]> participantsTask = SettlementService.GetParticipantsAsync(Id);
+        Task<SettlementModel?> settlementTask  = SettlementService.GetByIdAsync(Id);
+        Task<EntryModel[]> entriesTask          = EntryService.GetEntriesAsync(Id);
+        Task<UserModel[]> participantsTask      = SettlementService.GetParticipantsAsync(Id);
+        Task<ExchangeRateModel[]> ratesTask     = ExchangeRateService.GetLatestAsync();
 
-        await Task.WhenAll(settlementTask, entriesTask, participantsTask);
+        await Task.WhenAll(settlementTask, entriesTask, participantsTask, ratesTask);
 
-        _settlement = await settlementTask;
-        _entries = await entriesTask;
-        _participants = await participantsTask;
+        _settlement    = await settlementTask;
+        _entries       = await entriesTask;
+        _participants  = await participantsTask;
+        _exchangeRates = await ratesTask;
 
         _loading = false;
     }
@@ -137,15 +145,18 @@ else
     /// </summary>
     private decimal CalculateTotalBalance()
     {
+        if (_settlement is null) return 0;
+
         decimal total = 0;
+        string settlementCurrency = _settlement.Currency;
 
         foreach (EntryModel entry in _entries)
         {
-            decimal userShare = CalculateUserShare(entry);
+            decimal userShare    = CalculateUserShare(entry);
+            decimal entryValue   = CurrencyConverter.Convert(entry.Value,   entry.Currency, settlementCurrency, _exchangeRates);
+            decimal shareInSettlement = CurrencyConverter.Convert(userShare, entry.Currency, settlementCurrency, _exchangeRates);
 
-            // If the user paid for this entry, they are owed (value – their own share).
-            // If someone else paid, the user owes their share.
-            total += (entry.AddedBy == AuthState.UserId ? entry.Value : 0) - userShare;
+            total += (entry.AddedBy == AuthState.UserId ? entryValue : 0) - shareInSettlement;
         }
 
         return total;
