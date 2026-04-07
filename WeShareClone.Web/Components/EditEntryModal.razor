@@ -23,6 +23,7 @@
                     <label class="text-sm text-zinc-400">Amount</label>
                     <input @bind="_value" type="number" min="0.01" step="0.01"
                            placeholder="0.00"
+                           onfocus="this.select()"
                            class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
                 </div>
                 <div class="space-y-1 w-28">
@@ -69,14 +70,31 @@
             else
             {
                 <div class="space-y-2">
-                    <label class="text-sm text-zinc-400">
-                        @(_mode == "Percentage" ? "Percentages (must sum to 100%)" : "Amounts (must sum to total)")
-                    </label>
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm text-zinc-400">
+                            @(_mode == "Percentage" ? "Percentage per participant" : "Amount per participant")
+                        </label>
+                        @if (_mode == "Percentage")
+                        {
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full @RemainingPillClass">
+                                @((int)Math.Round(PercentageRemaining))% left
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="text-xs font-medium px-2 py-0.5 rounded-full @RemainingPillClass">
+                                @FixedRemaining.ToString("N2") @_currency left
+                            </span>
+                        }
+                    </div>
                     @foreach (DistributionRow row in _rows)
                     {
                         <div class="flex items-center gap-2">
                             <span class="text-sm text-zinc-300 flex-1 truncate">@row.Name</span>
-                            <input @bind="row.Input" type="number" min="0" step="0.01"
+                            <input @bind="row.Input" @bind:event="oninput" type="number" min="0"
+                                   step="@(_mode == "Percentage" ? "1" : "0.01")"
+                                   onkeydown="@(_mode == "Percentage" ? "if(event.key==='.') event.preventDefault()" : null)"
+                                   onfocus="this.select()"
                                    placeholder="0"
                                    class="w-24 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 focus:outline-none focus:border-violet-500 transition-colors text-right" />
                             @if (_mode == "Percentage")
@@ -100,7 +118,7 @@
                 Cancel
             </button>
             <button @onclick="SubmitAsync"
-                    disabled="@_loading"
+                    disabled="@(_loading || !IsFullyDistributed)"
                     class="flex-1 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
                 @(_loading ? "Saving…" : "Save changes")
             </button>
@@ -153,43 +171,32 @@
     private void SetMode(string mode)
     {
         _mode = mode;
-        ApplyEvenSplit();
+        foreach (DistributionRow row in _rows)
+        {
+            row.Input    = 0;
+            row.Selected = true;
+        }
     }
 
-    /// <summary>
-    /// Pre-fills distribution inputs with an even split when switching to
-    /// Percentage or FixedAmount mode. The remainder goes to the last row
-    /// to ensure the sum is exact.
-    /// </summary>
-    private void ApplyEvenSplit()
+    private decimal PercentageRemaining => 100m - _rows.Sum(r => r.Input);
+    private decimal FixedRemaining      => _value - _rows.Sum(r => r.Input);
+
+    private bool IsFullyDistributed => _mode switch
     {
-        if (_mode == "EvenSplit" || _rows.Count == 0) return;
+        "EvenSplit"   => _rows.Any(r => r.Selected),
+        "Percentage"  => Math.Abs(PercentageRemaining) <= 0.01m,
+        "FixedAmount" => _value > 0 && Math.Abs(FixedRemaining) <= 0.01m,
+        _             => false
+    };
 
-        if (_mode == "Percentage")
+    private string RemainingPillClass
+    {
+        get
         {
-            decimal each     = Math.Round(100m / _rows.Count, 2);
-            decimal assigned = 0;
-
-            for (int i = 0; i < _rows.Count - 1; i++)
-            {
-                _rows[i].Input  = each;
-                assigned       += each;
-            }
-
-            _rows[^1].Input = Math.Round(100m - assigned, 2);
-        }
-        else if (_mode == "FixedAmount" && _value > 0)
-        {
-            decimal each     = Math.Round(_value / _rows.Count, 2);
-            decimal assigned = 0;
-
-            for (int i = 0; i < _rows.Count - 1; i++)
-            {
-                _rows[i].Input  = each;
-                assigned       += each;
-            }
-
-            _rows[^1].Input = Math.Round(_value - assigned, 2);
+            decimal remaining = _mode == "Percentage" ? PercentageRemaining : FixedRemaining;
+            if (Math.Abs(remaining) <= 0.01m) return "bg-emerald-900/50 text-emerald-400";
+            if (remaining < 0)               return "bg-red-900/50 text-red-400";
+            return "bg-amber-900/50 text-amber-400";
         }
     }
 
