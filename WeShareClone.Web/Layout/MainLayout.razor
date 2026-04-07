@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject AuthStateService AuthState
 @inject AuthService AuthService
 @inject NavigationManager Nav
@@ -12,7 +13,7 @@
                 <a href="/" class="font-semibold text-zinc-100 tracking-tight hover:text-white transition-colors">WeShare</a>
 
                 <!-- User menu -->
-                <div class="relative">
+                <div class="relative" @ref="_menuRef">
                     <button @onclick="ToggleMenu"
                             class="text-sm text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer flex items-center gap-2">
                         <img src="@GravatarUrl" alt="" width="28" height="28"
@@ -23,9 +24,6 @@
 
                     @if (_menuOpen)
                     {
-                        <!-- Backdrop to close on outside click -->
-                        <div class="fixed inset-0 z-40" @onclick="CloseMenu"></div>
-
                         <!-- Dropdown -->
                         <div class="absolute right-0 top-full mt-2 w-52 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-50 py-1 overflow-hidden">
                             <div class="px-4 py-2 border-b border-zinc-800">
@@ -33,16 +31,16 @@
                                 <p class="text-xs text-zinc-500 truncate">@AuthState.UserEmail</p>
                             </div>
 
-                            <a href="/account/passkeys" @onclick="CloseMenu"
-                               class="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
-                                <span>🔑</span>
-                                <span>Manage passkeys</span>
-                            </a>
-
                             <a href="/account/profile" @onclick="CloseMenu"
                                class="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
                                 <span>✏️</span>
                                 <span>Edit profile</span>
+                            </a>
+
+                            <a href="/account/passkeys" @onclick="CloseMenu"
+                               class="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                                <span>🔑</span>
+                                <span>Manage passkeys</span>
                             </a>
 
                             @if (AuthState.IsAdmin)
@@ -72,6 +70,9 @@
 
 @code {
     private bool _menuOpen;
+    private bool _outsideClickRegistered;
+    private ElementReference _menuRef;
+    private DotNetObjectReference<MainLayout>? _dotNetRef;
     private string? _inviteLinkStatus;
 
     private string GravatarUrl
@@ -85,8 +86,39 @@
         }
     }
 
+    protected override void OnInitialized()
+        => _dotNetRef = DotNetObjectReference.Create(this);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_menuOpen && !_outsideClickRegistered)
+        {
+            await JS.InvokeVoidAsync("registerOutsideClick", _menuRef, _dotNetRef);
+            _outsideClickRegistered = true;
+        }
+        else if (!_menuOpen && _outsideClickRegistered)
+        {
+            await JS.InvokeVoidAsync("unregisterOutsideClick");
+            _outsideClickRegistered = false;
+        }
+    }
+
     private void ToggleMenu() => _menuOpen = !_menuOpen;
-    private void CloseMenu()  => _menuOpen = false;
+
+    private void CloseMenu()
+    {
+        _menuOpen = false;
+    }
+
+    [JSInvokable]
+    public void CloseMenuFromOutside()
+    {
+        if (!_menuOpen) return;
+        _menuOpen = false;
+        StateHasChanged();
+    }
+
+    public void Dispose() => _dotNetRef?.Dispose();
 
 
     private async Task CopyInviteLinkAsync()
@@ -100,16 +132,19 @@
             if (string.IsNullOrEmpty(token))
             {
                 _inviteLinkStatus = "No invite token configured";
+                StateHasChanged();
                 return;
             }
 
             string link = $"{Nav.BaseUri}login?signup-token={Uri.EscapeDataString(token)}";
             await JS.InvokeVoidAsync("navigator.clipboard.writeText", link);
             _inviteLinkStatus = "✓ Copied!";
+            StateHasChanged();
         }
         catch
         {
             _inviteLinkStatus = "Failed to copy";
+            StateHasChanged();
         }
         finally
         {

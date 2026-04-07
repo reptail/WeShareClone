@@ -328,7 +328,6 @@ else
 
     private async Task OnParticipantAdded(UserModel user)
     {
-        _showAddParticipant = false;
         _participants = await SettlementService.GetParticipantsAsync(Id);
     }
 

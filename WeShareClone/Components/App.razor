@@ -12,6 +12,26 @@
     <script>
         tailwind.config = { darkMode: 'class' };
         function scrollIntoView(element) { element.scrollIntoView({ behavior: 'smooth' }); }
+
+        window._menuClickHandler = null;
+        function registerOutsideClick(menuElement, dotnetRef) {
+            unregisterOutsideClick();
+            setTimeout(() => {
+                window._menuClickHandler = function (e) {
+                    if (!menuElement.contains(e.target)) {
+                        dotnetRef.invokeMethodAsync('CloseMenuFromOutside');
+                        unregisterOutsideClick();
+                    }
+                };
+                document.addEventListener('click', window._menuClickHandler);
+            }, 0);
+        }
+        function unregisterOutsideClick() {
+            if (window._menuClickHandler) {
+                document.removeEventListener('click', window._menuClickHandler);
+                window._menuClickHandler = null;
+            }
+        }
     </script>
     <script src="js/passkey.js"></script>
     <style>
