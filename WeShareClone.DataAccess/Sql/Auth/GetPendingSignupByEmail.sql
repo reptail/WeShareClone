@@ -1,3 +1,3 @@
-SELECT Id, Email, Name, CreatedAtUtc
+SELECT Id, Email, Name, Phone, CreatedAtUtc
 FROM PendingSignups
 WHERE Email = @Email;

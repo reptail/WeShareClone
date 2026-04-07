@@ -1,3 +1,3 @@
-INSERT INTO Users (Email, Name)
+INSERT INTO Users (Email, Name, Phone)
 OUTPUT INSERTED.*
-VALUES (@Email, @Name);
+VALUES (@Email, @Name, @Phone);

@@ -1,5 +1,6 @@
 UPDATE Users
-SET    Name = @Name
+SET    Name  = @Name,
+       Phone = @Phone
 OUTPUT INSERTED.Id,
        INSERTED.Email,
        INSERTED.Name,

@@ -51,6 +51,7 @@ public static class DomainToDtoMappingExtensions
                 id: user.Id,
                 email: user.Email,
                 name: user.Name,
+                phone: user.Phone,
                 role: user.Role.ToString()
             );
     }

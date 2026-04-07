@@ -39,6 +39,12 @@
                                 <span>Manage passkeys</span>
                             </a>
 
+                            <a href="/account/profile" @onclick="CloseMenu"
+                               class="w-full text-left px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                                <span>✏️</span>
+                                <span>Edit profile</span>
+                            </a>
+
                             @if (AuthState.IsAdmin)
                             {
                                 <button @onclick="CopyInviteLinkAsync"

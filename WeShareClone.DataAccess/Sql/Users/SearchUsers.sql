@@ -3,6 +3,7 @@ SELECT TOP 10
     u.Id,
     u.Email,
     u.Name,
+    u.Phone,
     u.Role,
     u.JoinedAtUtc,
     u.IsDeleted

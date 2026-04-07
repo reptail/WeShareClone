@@ -14,7 +14,7 @@ public interface IAuthService
     Task<AuthToken?> RefreshTokenAsync(string refreshToken);
 
     /// <summary>Initiates signup for the given email and name. If email is already registered, acts like login.</summary>
-    Task RequestSignupAsync(string email, string name);
+    Task RequestSignupAsync(string email, string name, string? phone = null);
 
     /// <summary>Verifies the code and completes signup or login. Returns null if code is invalid, expired, or no pending signup/user found.</summary>
     Task<AuthToken?> VerifySignupAsync(string email, string code);

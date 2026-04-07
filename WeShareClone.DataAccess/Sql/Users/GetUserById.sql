@@ -1,4 +1,4 @@
-SELECT Id, Email, Name, Role, JoinedAtUtc, IsDeleted
+SELECT Id, Email, Name, Phone, Role, JoinedAtUtc, IsDeleted
 FROM Users
 WHERE Id = @Id
   AND IsDeleted = 0;

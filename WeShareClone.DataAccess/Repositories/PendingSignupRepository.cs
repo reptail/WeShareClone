@@ -20,12 +20,12 @@ public class PendingSignupRepository(Func<SqlConnection> connectionFactory) : IP
         return row?.ToDomain();
     }
 
-    public async Task UpsertAsync(string email, string name)
+    public async Task UpsertAsync(string email, string name, string? phone = null)
     {
         using SqlConnection connection = connectionFactory();
         await connection.ExecuteAsync(
             sql: SqlScripts.UpsertPendingSignup,
-            param: new { Email = email, Name = name }
+            param: new { Email = email, Name = name, Phone = phone }
         );
     }
 

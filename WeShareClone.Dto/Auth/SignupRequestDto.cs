@@ -17,6 +17,9 @@ public class SignupRequestDto
     /// <summary>Optional invite token. Required when the API is configured for invite-only sign-up.</summary>
     public string? InviteToken { get; init; }
 
+    /// <summary>Optional phone number of the user.</summary>
+    public string? Phone { get; init; }
+
     /// <summary>Initializes a new empty instance of <see cref="SignupRequestDto"/>.</summary>
     public SignupRequestDto() { }
 
@@ -24,10 +27,12 @@ public class SignupRequestDto
     /// <param name="email">The user's email address.</param>
     /// <param name="name">The user's display name.</param>
     /// <param name="inviteToken">Optional invite token.</param>
-    public SignupRequestDto(string email, string name, string? inviteToken = null)
+    /// <param name="phone">Optional phone number.</param>
+    public SignupRequestDto(string email, string name, string? inviteToken = null, string? phone = null)
     {
         Email       = email;
         Name        = name;
         InviteToken = inviteToken;
+        Phone       = phone;
     }
 }

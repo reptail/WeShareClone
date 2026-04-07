@@ -40,12 +40,12 @@ public class UserRepository(Func<SqlConnection> connectionFactory) : IUserReposi
         return rows.Select(r => r.ToDomain()).ToArray();
     }
 
-    public async Task<User> CreateAsync(string email, string name)
+    public async Task<User> CreateAsync(string email, string name, string? phone = null)
     {
         using SqlConnection connection = connectionFactory();
         DbUser row = await connection.QuerySingleAsync<DbUser>(
             sql: SqlScripts.CreateUser,
-            param: new { Email = email, Name = name }
+            param: new { Email = email, Name = name, Phone = phone }
         );
         return row.ToDomain();
     }
@@ -56,6 +56,16 @@ public class UserRepository(Func<SqlConnection> connectionFactory) : IUserReposi
         DbUser? row = await connection.QuerySingleOrDefaultAsync<DbUser>(
             sql: SqlScripts.UpdateUserName,
             param: new { Id = id, Name = name }
+        );
+        return row?.ToDomain();
+    }
+
+    public async Task<User?> UpdateProfileAsync(int id, string name, string? phone)
+    {
+        using SqlConnection connection = connectionFactory();
+        DbUser? row = await connection.QuerySingleOrDefaultAsync<DbUser>(
+            sql: SqlScripts.UpdateUserProfile,
+            param: new { Id = id, Name = name, Phone = phone }
         );
         return row?.ToDomain();
     }

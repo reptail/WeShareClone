@@ -83,11 +83,11 @@ public class AuthService(
         );
     }
 
-    public async Task RequestSignupAsync(string email, string name)
+    public async Task RequestSignupAsync(string email, string name, string? phone = null)
     {
         User? existingUser = await userRepository.GetByEmailAsync(email);
         if (existingUser is null)
-            await pendingSignupRepository.UpsertAsync(email: email, name: name);
+            await pendingSignupRepository.UpsertAsync(email: email, name: name, phone: phone);
 
         await GenerateAndSendVerificationCodeAsync(email);
     }
@@ -113,7 +113,7 @@ public class AuthService(
             if (pending is null)
                 return null;
 
-            user = await userRepository.CreateAsync(email: email, name: pending.Name);
+            user = await userRepository.CreateAsync(email: email, name: pending.Name, phone: pending.Phone);
             await pendingSignupRepository.DeleteByEmailAsync(email);
         }
 

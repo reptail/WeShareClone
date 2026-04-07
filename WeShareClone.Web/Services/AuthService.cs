@@ -99,11 +99,11 @@ public class AuthService(HttpClient http, AuthStateService authState)
     /// provided email address. Pass <paramref name="inviteToken"/> when the API is
     /// configured for invite-only sign-up.
     /// </summary>
-    public async Task SignupAsync(string email, string name, string? inviteToken = null)
+    public async Task SignupAsync(string email, string name, string? phone = null, string? inviteToken = null)
     {
         HttpResponseMessage response = await http.PostAsJsonAsync(
             "api/auth/signup",
-            new { email, name, inviteToken }
+            new { email, name, phone, inviteToken }
         );
         response.EnsureSuccessStatusCode();
     }

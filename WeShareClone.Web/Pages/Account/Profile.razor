@@ -1,0 +1,123 @@
+@page "/account/profile"
+@inject AuthStateService AuthState
+@inject UserService UserService
+@inject NavigationManager Nav
+
+<PageTitle>Edit profile – WeShare</PageTitle>
+
+@if (!AuthState.IsAuthenticated)
+{
+    return;
+}
+
+<div class="space-y-6 max-w-sm">
+    <h1 class="text-xl font-semibold">Edit profile</h1>
+
+    @if (_loading)
+    {
+        <p class="text-sm text-zinc-500">Loading…</p>
+    }
+    else
+    {
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+
+            <div class="space-y-1">
+                <label class="text-sm text-zinc-400">Display name</label>
+                <input @bind="_name" @bind:event="oninput"
+                       placeholder="Jane Smith"
+                       class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-sm text-zinc-400">Phone number <span class="text-zinc-600">(optional)</span></label>
+                <input @bind="_phone" @bind:event="oninput"
+                       type="tel"
+                       placeholder="+45 12 34 56 78"
+                       class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+            </div>
+
+            @if (_errorMessage is not null)
+            {
+                <p class="text-sm text-red-400">@_errorMessage</p>
+            }
+
+            @if (_successMessage is not null)
+            {
+                <p class="text-sm text-green-400">@_successMessage</p>
+            }
+
+            <button @onclick="SaveAsync"
+                    disabled="@(_saving || string.IsNullOrWhiteSpace(_name))"
+                    class="w-full bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-xl text-sm transition-colors cursor-pointer">
+                @(_saving ? "Saving…" : "Save changes")
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    private string _name  = string.Empty;
+    private string _phone = string.Empty;
+    private bool   _loading = true;
+    private bool   _saving;
+    private string? _errorMessage;
+    private string? _successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthState.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            WeShareClone.Web.Models.UserModel? user = await UserService.GetMeAsync();
+            if (user is not null)
+            {
+                _name  = user.Name;
+                _phone = user.Phone ?? string.Empty;
+            }
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        _errorMessage   = null;
+        _successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _errorMessage = "Name is required.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            bool success = await UserService.UpdateProfileAsync(
+                name: _name.Trim(),
+                phone: string.IsNullOrWhiteSpace(_phone) ? null : _phone.Trim()
+            );
+
+            if (success)
+                _successMessage = "✓ Profile updated.";
+            else
+                _errorMessage = "Failed to save. Please try again.";
+        }
+        catch
+        {
+            _errorMessage = "Something went wrong. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

@@ -23,4 +23,33 @@ public class UserService(HttpClient http)
             return [];
         }
     }
+
+    /// <summary>
+    /// Returns the authenticated user's own profile.
+    /// Returns <c>null</c> on failure.
+    /// </summary>
+    public async Task<UserModel?> GetMeAsync()
+    {
+        try
+        {
+            return await http.GetFromJsonAsync<UserModel>("api/users/me");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Updates the authenticated user's profile (name and phone number).
+    /// Returns <c>true</c> on success.
+    /// </summary>
+    public async Task<bool> UpdateProfileAsync(string name, string? phone = null)
+    {
+        HttpResponseMessage response = await http.PutAsJsonAsync(
+            "api/users/me",
+            new { name, phone }
+        );
+        return response.IsSuccessStatusCode;
+    }
 }

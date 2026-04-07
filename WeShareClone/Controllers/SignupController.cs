@@ -38,7 +38,8 @@ public class SignupController(IAuthService authService, IConfiguration configura
 
         await authService.RequestSignupAsync(
             email: dto.Email,
-            name: dto.Name
+            name: dto.Name,
+            phone: dto.Phone
         );
         return Ok();
     }

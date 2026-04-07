@@ -12,6 +12,7 @@ public static class DbToDomainMappingExtensions
                 Id: db.Id,
                 Email: db.Email,
                 Name: db.Name,
+                Phone: db.Phone,
                 Role: db.Role,
                 JoinedAtUtc: db.JoinedAtUtc,
                 IsDeleted: db.IsDeleted
@@ -85,6 +86,7 @@ public static class DbToDomainMappingExtensions
                 Id: db.Id,
                 Email: db.Email,
                 Name: db.Name,
+                Phone: db.Phone,
                 CreatedAtUtc: db.CreatedAtUtc
             );
     }
