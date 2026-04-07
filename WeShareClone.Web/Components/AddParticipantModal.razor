@@ -13,7 +13,7 @@
             <div class="space-y-1">
                 <label class="text-sm text-zinc-400">Name or email</label>
                 <div class="flex gap-2">
-                    <input @bind="_query"
+                    <input @bind="_query" @ref="_queryInput"
                            @bind:event="oninput"
                            @onkeydown="OnKeyDown"
                            type="text"
@@ -90,6 +90,13 @@
     private bool _searched;
     private int? _addingId;
     private string? _errorMessage;
+    private ElementReference _queryInput;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await _queryInput.FocusAsync();
+    }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
