@@ -8,5 +8,8 @@ public class SettlementModel
     public string Currency { get; set; } = string.Empty;
     public int CreatedBy { get; set; }
     public DateTime CreatedAtUtc { get; set; }
-    public bool IsOpen { get; set; }
+    public int Status { get; set; }
+
+    public ESettlementStatus SettlementStatus => (ESettlementStatus)Status;
+    public bool IsOpen => SettlementStatus == ESettlementStatus.Open;
 }

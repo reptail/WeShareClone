@@ -60,7 +60,7 @@ public class SettlementRepository(Func<SqlConnection> connectionFactory) : ISett
                 settlement.Thumbnail,
                 settlement.Currency,
                 settlement.CreatedBy,
-                settlement.IsOpen,
+                Status = (byte)settlement.Status,
             }
         );
         return row.ToDomain();
@@ -77,8 +77,18 @@ public class SettlementRepository(Func<SqlConnection> connectionFactory) : ISett
                 settlement.Name,
                 settlement.Thumbnail,
                 settlement.Currency,
-                settlement.IsOpen,
+                Status = (byte)settlement.Status,
             }
+        );
+        return row?.ToDomain();
+    }
+
+    public async Task<Settlement?> UpdateStatusAsync(int id, ESettlementStatus status)
+    {
+        using SqlConnection connection = connectionFactory();
+        DbSettlement? row = await connection.QuerySingleOrDefaultAsync<DbSettlement>(
+            sql: SqlScripts.UpdateSettlementStatus,
+            param: new { Id = id, Status = (byte)status }
         );
         return row?.ToDomain();
     }

@@ -30,7 +30,7 @@ public static class DomainToDbMappingExtensions
                 Currency = domain.Currency,
                 CreatedBy = domain.CreatedBy,
                 CreatedAtUtc = domain.CreatedAtUtc,
-                IsOpen = domain.IsOpen,
+                Status = (byte)domain.Status,
             };
     }
 

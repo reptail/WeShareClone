@@ -4,6 +4,6 @@ SELECT Id,
        Currency,
        CreatedBy,
        CreatedAtUtc,
-       IsOpen
+       Status
 FROM   Settlements
 ORDER BY Name;

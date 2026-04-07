@@ -7,4 +7,4 @@ public record Settlement(
     string Currency,
     int CreatedBy,
     DateTime CreatedAtUtc,
-    bool IsOpen);
+    ESettlementStatus Status);

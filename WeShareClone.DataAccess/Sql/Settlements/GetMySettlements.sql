@@ -4,7 +4,7 @@ SELECT s.Id,
        s.Currency,
        s.CreatedBy,
        s.CreatedAtUtc,
-       s.IsOpen
+       s.Status
 FROM   Settlements s
 WHERE  s.CreatedBy = @UserId
 UNION
@@ -14,7 +14,7 @@ SELECT s.Id,
        s.Currency,
        s.CreatedBy,
        s.CreatedAtUtc,
-       s.IsOpen
+       s.Status
 FROM   Settlements s
 INNER JOIN SettlementUsers su ON su.SettlementId = s.Id
 WHERE  su.UserId = @UserId

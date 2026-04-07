@@ -18,7 +18,24 @@ public static class DomainToDtoMappingExtensions
                 currency: settlement.Currency,
                 createdBy: settlement.CreatedBy,
                 createdAtUtc: settlement.CreatedAtUtc,
-                isOpen: settlement.IsOpen
+                status: (int)settlement.Status
+            );
+    }
+
+    extension(SettlementDebt debt)
+    {
+        public SettlementDebtDto ToDto()
+            => new(
+                id: debt.Id,
+                settlementId: debt.SettlementId,
+                fromUserId: debt.FromUserId,
+                toUserId: debt.ToUserId,
+                amount: debt.Amount,
+                currency: debt.Currency,
+                isPaid: debt.IsPaid,
+                paidAtUtc: debt.PaidAtUtc,
+                createdAtUtc: debt.CreatedAtUtc,
+                updatedAtUtc: debt.UpdatedAtUtc
             );
     }
 

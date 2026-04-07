@@ -8,5 +8,5 @@ public class DbSettlement
     public string Currency { get; init; } = string.Empty;
     public int CreatedBy { get; init; }
     public DateTime CreatedAtUtc { get; init; }
-    public bool IsOpen { get; init; }
+    public byte Status { get; init; }
 }

@@ -1,8 +1,5 @@
 UPDATE Settlements
-SET    Name      = @Name,
-       Thumbnail = @Thumbnail,
-       Currency  = @Currency,
-       Status    = @Status
+SET    Status = @Status
 OUTPUT INSERTED.Id,
        INSERTED.Name,
        INSERTED.Thumbnail,

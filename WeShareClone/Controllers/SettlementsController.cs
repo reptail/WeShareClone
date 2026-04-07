@@ -7,6 +7,7 @@ using WeShareClone.Dto.Entries;
 using WeShareClone.Dto.Settlements;
 using WeShareClone.Dto.Users;
 using WeShareClone.Extensions;
+using WeShareClone.Utilities;
 
 namespace WeShareClone.Controllers;
 
@@ -15,7 +16,9 @@ namespace WeShareClone.Controllers;
 [Authorize]
 public class SettlementsController(
     ISettlementRepository settlementRepository,
-    IEntryRepository entryRepository) : ControllerBase
+    IEntryRepository entryRepository,
+    ISettlementDebtRepository settlementDebtRepository,
+    IExchangeRateRepository exchangeRateRepository) : ControllerBase
 {
     private int GetUserId()
         => int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
@@ -118,7 +121,7 @@ public class SettlementsController(
         if (settlement.CreatedBy != GetUserId())
             return Forbid();
 
-        Settlement? updated = await settlementRepository.UpdateAsync(dto.ToDomain(id));
+        Settlement? updated = await settlementRepository.UpdateAsync(dto.ToDomain(id, settlement.Status));
         if (updated is null)
             return NotFound();
 
@@ -336,4 +339,197 @@ public class SettlementsController(
             EDistributionMode.FixedAmount => Math.Abs(distributions.Sum(d => d.Factor) - entryValue) <= 0.01m,
             _                             => false,
         };
+
+    // -----------------------------------------------------------------------
+    // Settlement lifecycle: Open → BeingSettled → Closed
+    // -----------------------------------------------------------------------
+
+    /// <summary>Starts settling a settlement: calculates and persists debts, transitions to BeingSettled.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <returns>The calculated debts.</returns>
+    /// <response code="200">Settlement is now in BeingSettled state; debts returned.</response>
+    /// <response code="400">Settlement is not in the Open state.</response>
+    /// <response code="403">Caller is not the creator of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
+    [HttpPost("{id:int}/settle")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SettlementDebtDto[]>> StartSettlingAsync(int id)
+    {
+        Settlement? settlement = await settlementRepository.GetByIdAsync(id);
+        if (settlement is null)
+            return NotFound();
+
+        if (settlement.CreatedBy != GetUserId())
+            return Forbid();
+
+        if (settlement.Status != ESettlementStatus.Open)
+            return BadRequest("Settlement must be in the Open state to start settling.");
+
+        int[] participantIds = await settlementRepository.GetParticipantIdsAsync(id);
+        Entry[] entries = await entryRepository.GetBySettlementIdAsync(id);
+        ExchangeRate[] rates = await exchangeRateRepository.GetLatestAsync();
+
+        DebtCalculator.DebtPayment[] payments = DebtCalculator.Calculate(
+            entries, participantIds, rates, settlement.Currency
+        );
+
+        // Persist calculated debts
+        List<SettlementDebt> debts = [];
+        foreach (DebtCalculator.DebtPayment payment in payments)
+        {
+            SettlementDebt debt = await settlementDebtRepository.CreateAsync(new SettlementDebt(
+                Id: 0,
+                SettlementId: id,
+                FromUserId: payment.FromUserId,
+                ToUserId: payment.ToUserId,
+                Amount: payment.Amount,
+                Currency: settlement.Currency,
+                IsPaid: false,
+                PaidAtUtc: null,
+                CreatedAtUtc: default,
+                UpdatedAtUtc: default
+            ));
+            debts.Add(debt);
+        }
+
+        await settlementRepository.UpdateStatusAsync(id, ESettlementStatus.BeingSettled);
+
+        return Ok(debts.Select(d => d.ToDto()).ToArray());
+    }
+
+    /// <summary>Reverts a settlement from BeingSettled back to Open, removing all persisted debts.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <response code="204">Settlement reverted to Open; debts deleted.</response>
+    /// <response code="400">Settlement is not in the BeingSettled state.</response>
+    /// <response code="403">Caller is not the creator of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
+    [HttpDelete("{id:int}/settle")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevertSettlingAsync(int id)
+    {
+        Settlement? settlement = await settlementRepository.GetByIdAsync(id);
+        if (settlement is null)
+            return NotFound();
+
+        if (settlement.CreatedBy != GetUserId())
+            return Forbid();
+
+        if (settlement.Status != ESettlementStatus.BeingSettled)
+            return BadRequest("Settlement must be in the BeingSettled state to revert.");
+
+        await settlementDebtRepository.DeleteBySettlementIdAsync(id);
+        await settlementRepository.UpdateStatusAsync(id, ESettlementStatus.Open);
+
+        return NoContent();
+    }
+
+    /// <summary>Closes a settlement. All debts must be paid first.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <response code="204">Settlement closed successfully.</response>
+    /// <response code="400">Settlement is not in BeingSettled state, or not all debts are paid.</response>
+    /// <response code="403">Caller is not the creator of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
+    [HttpPost("{id:int}/close")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CloseAsync(int id)
+    {
+        Settlement? settlement = await settlementRepository.GetByIdAsync(id);
+        if (settlement is null)
+            return NotFound();
+
+        if (settlement.CreatedBy != GetUserId())
+            return Forbid();
+
+        if (settlement.Status != ESettlementStatus.BeingSettled)
+            return BadRequest("Settlement must be in the BeingSettled state to close.");
+
+        SettlementDebt[] debts = await settlementDebtRepository.GetBySettlementIdAsync(id);
+        if (debts.Any(d => !d.IsPaid))
+            return BadRequest("All debts must be paid before closing the settlement.");
+
+        await settlementRepository.UpdateStatusAsync(id, ESettlementStatus.Closed);
+
+        return NoContent();
+    }
+
+    /// <summary>Reopens a closed settlement, removing all persisted debts.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <response code="204">Settlement reopened successfully.</response>
+    /// <response code="400">Settlement is not in the Closed state.</response>
+    /// <response code="403">Caller is not the creator of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
+    [HttpPost("{id:int}/reopen")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReopenAsync(int id)
+    {
+        Settlement? settlement = await settlementRepository.GetByIdAsync(id);
+        if (settlement is null)
+            return NotFound();
+
+        if (settlement.CreatedBy != GetUserId())
+            return Forbid();
+
+        if (settlement.Status != ESettlementStatus.Closed)
+            return BadRequest("Settlement must be in the Closed state to reopen.");
+
+        await settlementDebtRepository.DeleteBySettlementIdAsync(id);
+        await settlementRepository.UpdateStatusAsync(id, ESettlementStatus.Open);
+
+        return NoContent();
+    }
+
+    /// <summary>Returns all persisted debts for a settlement.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <returns>An array of debts for the settlement.</returns>
+    /// <response code="200">Debts retrieved successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement with the given ID exists.</response>
+    [HttpGet("{id:int}/debts")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SettlementDebtDto[]>> GetDebtsAsync(int id)
+    {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
+        SettlementDebt[] debts = await settlementDebtRepository.GetBySettlementIdAsync(id);
+        return Ok(debts.Select(d => d.ToDto()).ToArray());
+    }
+
+    /// <summary>Marks a debt as paid or unpaid.</summary>
+    /// <param name="id">The ID of the settlement.</param>
+    /// <param name="debtId">The ID of the debt to update.</param>
+    /// <param name="isPaid">Whether the debt is paid.</param>
+    /// <returns>The updated debt.</returns>
+    /// <response code="200">Debt updated successfully.</response>
+    /// <response code="403">Caller is not a participant of this settlement.</response>
+    /// <response code="404">No settlement or debt with the given ID exists.</response>
+    [HttpPatch("{id:int}/debts/{debtId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SettlementDebtDto>> UpdateDebtPaidAsync(int id, int debtId, [FromBody] bool isPaid)
+    {
+        if (!await settlementRepository.IsParticipantAsync(id, GetUserId()))
+            return await settlementRepository.GetByIdAsync(id) is null ? NotFound() : Forbid();
+
+        SettlementDebt? updated = await settlementDebtRepository.UpdatePaidAsync(debtId, isPaid);
+        if (updated is null)
+            return NotFound();
+
+        return Ok(updated.ToDto());
+    }
 }

@@ -26,46 +26,164 @@ else if (_settlement is null)
 }
 else
 {
+    bool isCreator = _settlement.CreatedBy == AuthState.UserId;
+    bool isOpen = _settlement.SettlementStatus == ESettlementStatus.Open;
+    bool isSettling = _settlement.SettlementStatus == ESettlementStatus.BeingSettled;
+    bool isClosed = _settlement.SettlementStatus == ESettlementStatus.Closed;
+    bool allPaid = _debts.Length > 0 && _debts.All(d => d.IsPaid);
+
     <div class="space-y-4 pb-24">
         <!-- Header -->
-        <div class="flex items-center gap-3">
-            <button @onclick='() => Nav.NavigateTo("/")'
-                    class="text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer text-lg leading-none">
-                ←
-            </button>
-            <div>
-                <h1 class="text-xl font-semibold">@_settlement.Name</h1>
-                <p class="text-xs text-zinc-500">@_settlement.Currency · @(_settlement.IsOpen ? "Open" : "Closed")</p>
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <button @onclick='() => Nav.NavigateTo("/")'
+                        class="text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer text-lg leading-none shrink-0">
+                    ←
+                </button>
+                <div>
+                    <h1 class="text-xl font-semibold">@_settlement.Name</h1>
+                    <p class="text-xs text-zinc-500">
+                        @_settlement.Currency ·
+                        @if (isOpen)
+                        {
+                            <span>Open</span>
+                        }
+                        else if (isSettling)
+                        {
+                            <span class="text-yellow-400">Settling</span>
+                        }
+                        else
+                        {
+                            <span class="text-zinc-400">Closed</span>
+                        }
+                    </p>
+                </div>
             </div>
+
+            <!-- Creator lifecycle actions -->
+            @if (isCreator)
+            {
+                @if (isOpen)
+                {
+                    <button @onclick="StartSettlingAsync"
+                            disabled="@_actionInProgress"
+                            class="shrink-0 text-xs bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 border border-yellow-500/30 px-3 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50">
+                        Start settling
+                    </button>
+                }
+                else if (isSettling)
+                {
+                    <div class="flex gap-2 shrink-0">
+                        <button @onclick="RevertToOpenAsync"
+                                disabled="@_actionInProgress"
+                                class="text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-500 px-3 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50">
+                            Revert to open
+                        </button>
+                        <button @onclick="CloseSettlementAsync"
+                                disabled="@(!allPaid || _actionInProgress)"
+                                class="text-xs bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                            Close
+                        </button>
+                    </div>
+                }
+                else if (isClosed)
+                {
+                    <button @onclick="ReopenAsync"
+                            disabled="@_actionInProgress"
+                            class="shrink-0 text-xs text-violet-400 hover:text-violet-300 border border-violet-500/30 hover:border-violet-400/50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer disabled:opacity-50">
+                        Reopen
+                    </button>
+                }
+            }
         </div>
 
-        <!-- Balance summary -->
-        <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
-            @{
-                decimal balance = CalculateTotalBalance();
-            }
-            @if (balance > 0)
-            {
-                <p class="text-sm text-green-400 font-medium">You are owed @balance.ToString("N2") @_settlement.Currency</p>
-            }
-            else if (balance < 0)
-            {
-                <p class="text-sm text-red-400 font-medium">You owe @(Math.Abs(balance).ToString("N2")) @_settlement.Currency</p>
-            }
-            else
-            {
-                <p class="text-sm text-zinc-400">All settled up ✓</p>
-            }
-        </div>
+        @if (_actionError is not null)
+        {
+            <div class="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+                @_actionError
+            </div>
+        }
+
+        <!-- Balance summary (only relevant when open/settling) -->
+        @if (!isClosed)
+        {
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
+                @{
+                    decimal balance = CalculateTotalBalance();
+                }
+                @if (balance > 0)
+                {
+                    <p class="text-sm text-green-400 font-medium">You are owed @balance.ToString("N2") @_settlement.Currency</p>
+                }
+                else if (balance < 0)
+                {
+                    <p class="text-sm text-red-400 font-medium">You owe @(Math.Abs(balance).ToString("N2")) @_settlement.Currency</p>
+                }
+                else
+                {
+                    <p class="text-sm text-zinc-400">All settled up ✓</p>
+                }
+            </div>
+        }
+
+        <!-- Debt breakdown (BeingSettled or Closed) -->
+        @if ((isSettling || isClosed) && _debts.Length > 0)
+        {
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 space-y-3">
+                <p class="text-xs font-medium text-zinc-400 uppercase tracking-wide">Payments to make</p>
+                @foreach (SettlementDebtModel debt in _debts)
+                {
+                    UserModel? from = _participants.FirstOrDefault(p => p.Id == debt.FromUserId);
+                    UserModel? to   = _participants.FirstOrDefault(p => p.Id == debt.ToUserId);
+                    string fromName = from?.Name ?? $"User {debt.FromUserId}";
+                    string toName   = to?.Name   ?? $"User {debt.ToUserId}";
+
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-sm @(debt.IsPaid ? "line-through text-zinc-500" : "text-zinc-200")">
+                                @fromName → @toName
+                            </p>
+                            <p class="text-xs text-zinc-500">
+                                @debt.Amount.ToString("N2") @debt.Currency
+                            </p>
+                        </div>
+                        @if (!isClosed)
+                        {
+                            <button @onclick="() => ToggleDebtPaidAsync(debt)"
+                                    disabled="@_actionInProgress"
+                                    class="shrink-0 text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer disabled:opacity-50
+                                           @(debt.IsPaid
+                                               ? "border-green-500/40 bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                                               : "border-zinc-600 text-zinc-400 hover:border-zinc-400 hover:text-zinc-200")">
+                                @(debt.IsPaid ? "✓ Paid" : "Mark paid")
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="shrink-0 text-xs text-green-400">✓ Paid</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (isSettling && _debts.Length == 0)
+        {
+            <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
+                <p class="text-sm text-zinc-400">No payments needed — everyone is settled up!</p>
+            </div>
+        }
 
         <!-- Participants -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 space-y-2">
             <div class="flex items-center justify-between">
                 <p class="text-xs font-medium text-zinc-400 uppercase tracking-wide">Participants</p>
-                <button @onclick="() => _showAddParticipant = true"
-                        class="text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
-                    + Add
-                </button>
+                @if (isOpen)
+                {
+                    <button @onclick="() => _showAddParticipant = true"
+                            class="text-xs text-violet-400 hover:text-violet-300 transition-colors cursor-pointer">
+                        + Add
+                    </button>
+                }
             </div>
             <div class="flex flex-wrap gap-2">
                 @foreach (UserModel participant in _participants)
@@ -91,7 +209,7 @@ else
                                Participants="_participants"
                                SettlementCurrency="@(_settlement.Currency)"
                                ExchangeRates="_exchangeRates"
-                               OnEdit="() => _editingEntry = entry" />
+                               OnEdit="@(isOpen ? EventCallback.Factory.Create(this, () => _editingEntry = entry) : default)" />
                 }
             </div>
         }
@@ -99,11 +217,14 @@ else
         <div @ref="_bottomAnchor"></div>
     </div>
 
-    <!-- Add entry FAB -->
-    <button @onclick="() => _showAddEntry = true"
-            class="fixed bottom-6 right-6 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white rounded-full shadow-lg px-5 py-3 text-sm font-medium transition-colors z-30 cursor-pointer">
-        + Add entry
-    </button>
+    <!-- Add entry FAB — only when open -->
+    @if (isOpen)
+    {
+        <button @onclick="() => _showAddEntry = true"
+                class="fixed bottom-6 right-6 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white rounded-full shadow-lg px-5 py-3 text-sm font-medium transition-colors z-30 cursor-pointer">
+            + Add entry
+        </button>
+    }
 
     @if (_showAddEntry)
     {
@@ -138,11 +259,15 @@ else
     private EntryModel[] _entries = [];
     private UserModel[] _participants = [];
     private ExchangeRateModel[] _exchangeRates = [];
+    private SettlementDebtModel[] _debts = [];
     private bool _loading = true;
     private bool _showAddEntry;
     private bool _showAddParticipant;
     private EntryModel? _editingEntry;
     private ElementReference _bottomAnchor;
+    private bool _scrollToBottom;
+    private bool _actionInProgress;
+    private string? _actionError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,8 +289,6 @@ else
         }
     }
 
-    private bool _scrollToBottom;
-
     private async Task LoadAsync()
     {
         _loading = true;
@@ -182,6 +305,9 @@ else
         _participants  = await participantsTask;
         _exchangeRates = await ratesTask;
 
+        if (_settlement is not null && _settlement.SettlementStatus != ESettlementStatus.Open)
+            _debts = await SettlementService.GetDebtsAsync(Id);
+
         _loading = false;
         _scrollToBottom = true;
     }
@@ -189,7 +315,6 @@ else
     private async Task OnEntryCreated(EntryModel entry)
     {
         _showAddEntry = false;
-        // Refresh entries list and scroll to the new entry at the bottom
         _entries = await EntryService.GetEntriesAsync(Id);
         _scrollToBottom = true;
     }
@@ -205,6 +330,89 @@ else
     {
         _showAddParticipant = false;
         _participants = await SettlementService.GetParticipantsAsync(Id);
+    }
+
+    private async Task StartSettlingAsync()
+    {
+        _actionInProgress = true;
+        _actionError = null;
+        SettlementDebtModel[]? debts = await SettlementService.StartSettlingAsync(Id);
+        if (debts is not null)
+        {
+            _debts = debts;
+            _settlement = await SettlementService.GetByIdAsync(Id);
+        }
+        else
+        {
+            _actionError = "Failed to start settling. Please try again.";
+        }
+        _actionInProgress = false;
+    }
+
+    private async Task RevertToOpenAsync()
+    {
+        _actionInProgress = true;
+        _actionError = null;
+        bool ok = await SettlementService.RevertToOpenAsync(Id);
+        if (ok)
+        {
+            _debts = [];
+            _settlement = await SettlementService.GetByIdAsync(Id);
+        }
+        else
+        {
+            _actionError = "Failed to revert. Please try again.";
+        }
+        _actionInProgress = false;
+    }
+
+    private async Task CloseSettlementAsync()
+    {
+        _actionInProgress = true;
+        _actionError = null;
+        bool ok = await SettlementService.CloseAsync(Id);
+        if (ok)
+        {
+            _settlement = await SettlementService.GetByIdAsync(Id);
+        }
+        else
+        {
+            _actionError = "Failed to close. Make sure all debts are paid first.";
+        }
+        _actionInProgress = false;
+    }
+
+    private async Task ReopenAsync()
+    {
+        _actionInProgress = true;
+        _actionError = null;
+        bool ok = await SettlementService.ReopenAsync(Id);
+        if (ok)
+        {
+            _debts = [];
+            _settlement = await SettlementService.GetByIdAsync(Id);
+        }
+        else
+        {
+            _actionError = "Failed to reopen. Please try again.";
+        }
+        _actionInProgress = false;
+    }
+
+    private async Task ToggleDebtPaidAsync(SettlementDebtModel debt)
+    {
+        _actionInProgress = true;
+        _actionError = null;
+        SettlementDebtModel? updated = await SettlementService.MarkDebtPaidAsync(Id, debt.Id, !debt.IsPaid);
+        if (updated is not null)
+        {
+            _debts = _debts.Select(d => d.Id == updated.Id ? updated : d).ToArray();
+        }
+        else
+        {
+            _actionError = "Failed to update payment. Please try again.";
+        }
+        _actionInProgress = false;
     }
 
     /// <summary>
@@ -257,3 +465,4 @@ else
         };
     }
 }
+

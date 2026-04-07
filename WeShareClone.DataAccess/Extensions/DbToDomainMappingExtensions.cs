@@ -29,7 +29,24 @@ public static class DbToDomainMappingExtensions
                 Currency: db.Currency,
                 CreatedBy: db.CreatedBy,
                 CreatedAtUtc: db.CreatedAtUtc,
-                IsOpen: db.IsOpen
+                Status: (ESettlementStatus)db.Status
+            );
+    }
+
+    extension(DbSettlementDebt db)
+    {
+        public SettlementDebt ToDomain()
+            => new(
+                Id: db.Id,
+                SettlementId: db.SettlementId,
+                FromUserId: db.FromUserId,
+                ToUserId: db.ToUserId,
+                Amount: db.Amount,
+                Currency: db.Currency,
+                IsPaid: db.IsPaid,
+                PaidAtUtc: db.PaidAtUtc,
+                CreatedAtUtc: db.CreatedAtUtc,
+                UpdatedAtUtc: db.UpdatedAtUtc
             );
     }
 

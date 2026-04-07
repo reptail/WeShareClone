@@ -11,7 +11,7 @@ public class SettlementDto
     public string Currency { get; init; } = string.Empty;
     public int CreatedBy { get; init; }
     public DateTime CreatedAtUtc { get; init; }
-    public bool IsOpen { get; init; }
+    public int Status { get; init; }
 
     public SettlementDto() { }
 
@@ -22,7 +22,7 @@ public class SettlementDto
         string currency,
         int createdBy,
         DateTime createdAtUtc,
-        bool isOpen)
+        int status)
     {
         Id = id;
         Name = name;
@@ -30,6 +30,6 @@ public class SettlementDto
         Currency = currency;
         CreatedBy = createdBy;
         CreatedAtUtc = createdAtUtc;
-        IsOpen = isOpen;
+        Status = status;
     }
 }

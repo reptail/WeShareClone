@@ -82,6 +82,7 @@ builder.Services.AddScoped<Func<SqlConnection>>(
     sp => () => new SqlConnection(builder.Configuration.GetConnectionString("WeShareClone"))
 );
 builder.Services.AddScoped<ISettlementRepository, SettlementRepository>();
+builder.Services.AddScoped<ISettlementDebtRepository, SettlementDebtRepository>();
 builder.Services.AddScoped<IEntryRepository, EntryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IVerificationCodeRepository, VerificationCodeRepository>();

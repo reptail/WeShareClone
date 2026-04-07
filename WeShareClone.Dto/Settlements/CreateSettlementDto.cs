@@ -10,19 +10,16 @@ public class CreateSettlementDto
     [Required]
     [StringLength(3, MinimumLength = 3)]
     public string Currency { get; init; } = string.Empty;
-    public bool IsOpen { get; init; } = true;
 
     public CreateSettlementDto() { }
 
     public CreateSettlementDto(
         string name,
         string? thumbnail,
-        string currency,
-        bool isOpen = true)
+        string currency)
     {
         Name = name;
         Thumbnail = thumbnail;
         Currency = currency;
-        IsOpen = isOpen;
     }
 }

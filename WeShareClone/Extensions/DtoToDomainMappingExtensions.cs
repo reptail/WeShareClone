@@ -16,13 +16,13 @@ public static class DtoToDomainMappingExtensions
                 Currency: dto.Currency,
                 CreatedBy: createdBy,
                 CreatedAtUtc: default,
-                IsOpen: dto.IsOpen
+                Status: ESettlementStatus.Open
             );
     }
 
     extension(UpdateSettlementDto dto)
     {
-        public Settlement ToDomain(int id)
+        public Settlement ToDomain(int id, ESettlementStatus currentStatus)
             => new(
                 Id: id,
                 Name: dto.Name,
@@ -30,7 +30,7 @@ public static class DtoToDomainMappingExtensions
                 Currency: dto.Currency,
                 CreatedBy: 0,
                 CreatedAtUtc: default,
-                IsOpen: dto.IsOpen
+                Status: currentStatus
             );
     }
 
