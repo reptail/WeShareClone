@@ -14,11 +14,6 @@
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <h1 class="text-xl font-semibold">Passkeys</h1>
-        <button @onclick="AddPasskeyAsync"
-                disabled="@_adding"
-                class="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors cursor-pointer">
-            @(_adding ? "Registering…" : "+ Add passkey")
-        </button>
     </div>
 
     @if (_addError is not null)
@@ -31,6 +26,23 @@
         <p class="text-sm text-green-400">✓ Passkey registered successfully.</p>
     }
 
+    <!-- Add passkey section -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-3">
+        <p class="text-sm font-medium text-zinc-300">Register a new passkey</p>
+        <div class="space-y-1">
+            <label class="text-xs text-zinc-500">Name <span class="text-zinc-600">(optional)</span></label>
+            <input @bind="_newKeyName" @bind:event="oninput"
+                   placeholder="e.g. MacBook Touch ID"
+                   disabled="@_adding"
+                   class="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors disabled:opacity-50" />
+        </div>
+        <button @onclick="AddPasskeyAsync"
+                disabled="@_adding"
+                class="bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors cursor-pointer">
+            @(_adding ? "Registering…" : "+ Add passkey")
+        </button>
+    </div>
+
     @if (_loading)
     {
         <p class="text-sm text-zinc-500">Loading…</p>
@@ -38,7 +50,7 @@
     else if (_passkeys.Length == 0)
     {
         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center text-sm text-zinc-500">
-            No passkeys registered yet. Add one to sign in without a code.
+            No passkeys registered yet.
         </div>
     }
     else
@@ -46,19 +58,48 @@
         <div class="space-y-2">
             @foreach (PasskeyCredentialModel key in _passkeys)
             {
-                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="text-xl">🔑</span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-medium text-zinc-200 truncate">Passkey</p>
-                            <p class="text-xs text-zinc-500">Registered @key.CreatedAtUtc.ToLocalTime().ToString("d MMM yyyy, HH:mm")</p>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 space-y-2">
+                    @if (_editingId == key.Id)
+                    {
+                        <!-- Inline rename form -->
+                        <div class="flex items-center gap-2">
+                            <input @bind="_editName" @bind:event="oninput"
+                                   placeholder="Passkey name"
+                                   class="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                            <button @onclick="() => SaveNameAsync(key.Id)"
+                                    disabled="@_savingId"
+                                    class="text-xs bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg transition-colors cursor-pointer">
+                                @(_savingId ? "…" : "Save")
+                            </button>
+                            <button @onclick="CancelEdit"
+                                    class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+                                Cancel
+                            </button>
                         </div>
-                    </div>
-                    <button @onclick="() => DeleteAsync(key.Id)"
-                            disabled="@_deletingId.Contains(key.Id)"
-                            class="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0">
-                        @(_deletingId.Contains(key.Id) ? "Removing…" : "Remove")
-                    </button>
+                    }
+                    else
+                    {
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="text-xl">🔑</span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-medium text-zinc-200 truncate">@(key.Name ?? "Passkey")</p>
+                                    <p class="text-xs text-zinc-500">Registered @key.CreatedAtUtc.ToLocalTime().ToString("d MMM yyyy, HH:mm")</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <button @onclick="() => StartEdit(key.Id, key.Name)"
+                                        class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer">
+                                    ✏️
+                                </button>
+                                <button @onclick="() => DeleteAsync(key.Id)"
+                                        disabled="@_deletingId.Contains(key.Id)"
+                                        class="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer">
+                                    @(_deletingId.Contains(key.Id) ? "Removing…" : "Remove")
+                                </button>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -67,11 +108,17 @@
 
 @code {
     private PasskeyCredentialModel[] _passkeys = [];
-    private bool _loading = true;
-    private bool _adding;
-    private bool _addSuccess;
+    private bool    _loading    = true;
+    private bool    _adding;
+    private bool    _addSuccess;
     private string? _addError;
+    private string  _newKeyName = string.Empty;
     private HashSet<int> _deletingId = [];
+
+    // Inline rename state
+    private int?    _editingId;
+    private string  _editName  = string.Empty;
+    private bool    _savingId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,17 +161,35 @@
             }
 
             string attestationJson = await JS.InvokeAsync<string>("startPasskeyRegistration", optionsJson);
-            bool success = await AuthService.PasskeyRegisterCompleteAsync(attestationJson);
+            PasskeyCredentialModel? created = await AuthService.PasskeyRegisterCompleteAsync(attestationJson);
 
-            if (success)
+            if (created is null)
             {
-                _addSuccess = true;
-                await LoadAsync();
+                _addError = "Registration failed. Please try again.";
+                return;
+            }
+
+            // If the user gave a name, persist it immediately.
+            string? trimmedName = string.IsNullOrWhiteSpace(_newKeyName) ? null : _newKeyName.Trim();
+            if (trimmedName is not null)
+            {
+                PasskeyCredentialModel? renamed = await AuthService.RenamePasskeyAsync(created.Id, trimmedName);
+                if (renamed is not null)
+                {
+                    _passkeys = [.. _passkeys, renamed];
+                }
+                else
+                {
+                    _passkeys = [.. _passkeys, created];
+                }
             }
             else
             {
-                _addError = "Registration failed. Please try again.";
+                _passkeys = [.. _passkeys, created];
             }
+
+            _addSuccess  = true;
+            _newKeyName  = string.Empty;
         }
         catch (JSException)
         {
@@ -137,6 +202,42 @@
         finally
         {
             _adding = false;
+        }
+    }
+
+    private void StartEdit(int id, string? currentName)
+    {
+        _editingId = id;
+        _editName  = currentName ?? string.Empty;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _editName  = string.Empty;
+    }
+
+    private async Task SaveNameAsync(int id)
+    {
+        _savingId = true;
+        try
+        {
+            string? newName = string.IsNullOrWhiteSpace(_editName) ? null : _editName.Trim();
+            PasskeyCredentialModel? updated = await AuthService.RenamePasskeyAsync(id, newName);
+
+            if (updated is not null)
+            {
+                _passkeys = _passkeys
+                    .Select(k => k.Id == id ? updated : k)
+                    .ToArray();
+            }
+
+            _editingId = null;
+            _editName  = string.Empty;
+        }
+        finally
+        {
+            _savingId = false;
         }
     }
 

@@ -207,14 +207,17 @@ public class AuthService(HttpClient http, AuthStateService authState)
 
     /// <summary>
     /// Completes passkey registration by posting the browser's attestation response JSON.
-    /// Returns <c>true</c> on success (204 NoContent).
+    /// Returns the created <see cref="PasskeyCredentialModel"/> on success, or <c>null</c> on failure.
     /// </summary>
-    public async Task<bool> PasskeyRegisterCompleteAsync(string attestationJson)
+    public async Task<PasskeyCredentialModel?> PasskeyRegisterCompleteAsync(string attestationJson)
     {
         using StringContent content = new(attestationJson, Encoding.UTF8, "application/json");
         HttpResponseMessage response = await http.PostAsync("api/auth/passkey/register/complete", content);
 
-        return response.IsSuccessStatusCode;
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<PasskeyCredentialModel>();
     }
 
     // -------------------------------------------------------------------------
@@ -229,6 +232,20 @@ public class AuthService(HttpClient http, AuthStateService authState)
 
         return await response.Content.ReadFromJsonAsync<PasskeyCredentialModel[]>()
             ?? [];
+    }
+
+    /// <summary>Renames a registered passkey. Returns the updated model, or <c>null</c> on failure.</summary>
+    public async Task<PasskeyCredentialModel?> RenamePasskeyAsync(int id, string? name)
+    {
+        HttpResponseMessage response = await http.PatchAsJsonAsync(
+            $"api/auth/passkey/credentials/{id}",
+            new { name }
+        );
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<PasskeyCredentialModel>();
     }
 
     /// <summary>Deletes a registered passkey by its database identifier.</summary>

@@ -59,7 +59,7 @@ public class PasskeyService(
         return options;
     }
 
-    public async Task CompleteRegistrationAsync(int userId, string email, AuthenticatorAttestationRawResponse attestationResponse)
+    public async Task<PasskeyCredential> CompleteRegistrationAsync(int userId, string email, AuthenticatorAttestationRawResponse attestationResponse)
     {
         PasskeyChallenge? challenge = await challengeRepository.GetByEmailAndTypeAsync(
             email: email,
@@ -84,7 +84,7 @@ public class PasskeyService(
             }
         );
 
-        await credentialRepository.CreateAsync(
+        PasskeyCredential created = await credentialRepository.CreateAsync(
             userId: userId,
             credentialId: credential.Id,
             publicKey: credential.PublicKey,
@@ -96,6 +96,8 @@ public class PasskeyService(
             email: email,
             type: EPasskeyChallengeType.Registration
         );
+
+        return created;
     }
 
     public async Task<AssertionOptions?> BeginLoginAsync(string email)
@@ -179,6 +181,9 @@ public class PasskeyService(
 
     public Task<PasskeyCredential[]> GetCredentialsByUserIdAsync(int userId)
         => credentialRepository.GetByUserIdAsync(userId);
+
+    public Task<PasskeyCredential?> UpdateCredentialNameAsync(int userId, int credentialId, string? name)
+        => credentialRepository.UpdateNameAsync(id: credentialId, userId: userId, name: name);
 
     public Task DeleteCredentialAsync(int userId, int credentialId)
         => credentialRepository.DeleteByIdAsync(id: credentialId, userId: userId);

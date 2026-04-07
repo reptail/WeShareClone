@@ -63,6 +63,7 @@ public static class SqlScripts
     public static string GetPasskeyCredentialByCredentialId  => Load(nameof(GetPasskeyCredentialByCredentialId));
     public static string CreatePasskeyCredential             => Load(nameof(CreatePasskeyCredential));
     public static string UpdatePasskeySignCount              => Load(nameof(UpdatePasskeySignCount));
+    public static string UpdatePasskeyName                   => Load(nameof(UpdatePasskeyName));
     public static string DeletePasskeyCredentialById         => Load(nameof(DeletePasskeyCredentialById));
     public static string GetPasskeyChallengeByEmailAndType   => Load(nameof(GetPasskeyChallengeByEmailAndType));
     public static string UpsertPasskeyChallenge              => Load(nameof(UpsertPasskeyChallenge));

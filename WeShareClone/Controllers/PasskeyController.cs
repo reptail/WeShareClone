@@ -43,30 +43,37 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
     /// <summary>Completes passkey registration by validating and storing the new credential.</summary>
     /// <remarks>
     /// Submit the <c>AuthenticatorAttestationRawResponse</c> returned by <c>navigator.credentials.create()</c>
-    /// to register the passkey.
+    /// to register the passkey. Returns the newly created credential.
     /// </remarks>
     /// <param name="attestationResponse">The attestation response from the authenticator.</param>
-    /// <response code="204">Passkey registered successfully.</response>
+    /// <returns>The newly registered passkey credential.</returns>
+    /// <response code="200">Passkey registered successfully. Returns the new credential.</response>
     /// <response code="400">The attestation response is invalid or the registration challenge has expired.</response>
     /// <response code="401">User is not authenticated.</response>
     [HttpPost("register/complete")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> CompleteRegistrationAsync([FromBody] AuthenticatorAttestationRawResponse attestationResponse)
+    public async Task<ActionResult<PasskeyCredentialDto>> CompleteRegistrationAsync([FromBody] AuthenticatorAttestationRawResponse attestationResponse)
     {
         int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
         string email = User.FindFirst(JwtRegisteredClaimNames.Email)!.Value;
 
         try
         {
-            await passkeyService.CompleteRegistrationAsync(
+            PasskeyCredential created = await passkeyService.CompleteRegistrationAsync(
                 userId: userId,
                 email: email,
                 attestationResponse: attestationResponse
             );
-            return NoContent();
+
+            return Ok(new PasskeyCredentialDto(
+                id: created.Id,
+                aaGuid: created.AaGuid,
+                name: created.Name,
+                createdAtUtc: created.CreatedAtUtc
+            ));
         }
         catch (Fido2VerificationException ex)
         {
@@ -144,6 +151,7 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
             .Select(static c => new PasskeyCredentialDto(
                 id: c.Id,
                 aaGuid: c.AaGuid,
+                name: c.Name,
                 createdAtUtc: c.CreatedAtUtc
             ))
             .ToArray();
@@ -164,5 +172,38 @@ public class PasskeyController(IPasskeyService passkeyService) : ControllerBase
         int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
         await passkeyService.DeleteCredentialAsync(userId: userId, credentialId: id);
         return NoContent();
+    }
+
+    /// <summary>Renames a registered passkey credential.</summary>
+    /// <param name="id">The database identifier of the passkey.</param>
+    /// <param name="dto">The new name (set to null to clear).</param>
+    /// <returns>The updated passkey credential.</returns>
+    /// <response code="200">Passkey renamed successfully. Returns the updated credential.</response>
+    /// <response code="401">User is not authenticated.</response>
+    /// <response code="404">Passkey not found or does not belong to the authenticated user.</response>
+    [HttpPatch("credentials/{id:int}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<PasskeyCredentialDto>> RenameCredentialAsync([FromRoute] int id, [FromBody] RenamePasskeyDto dto)
+    {
+        int userId = int.Parse(User.FindFirst(JwtRegisteredClaimNames.Sub)!.Value);
+
+        PasskeyCredential? updated = await passkeyService.UpdateCredentialNameAsync(
+            userId: userId,
+            credentialId: id,
+            name: dto.Name
+        );
+
+        if (updated is null)
+            return NotFound();
+
+        return Ok(new PasskeyCredentialDto(
+            id: updated.Id,
+            aaGuid: updated.AaGuid,
+            name: updated.Name,
+            createdAtUtc: updated.CreatedAtUtc
+        ));
     }
 }

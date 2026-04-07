@@ -101,6 +101,7 @@ public static class DbToDomainMappingExtensions
                 PublicKey: db.PublicKey,
                 SignCount: db.SignCount,
                 AaGuid: db.AaGuid,
+                Name: db.Name,
                 CreatedAtUtc: db.CreatedAtUtc
             );
     }

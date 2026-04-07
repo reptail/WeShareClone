@@ -8,5 +8,6 @@ public class DbPasskeyCredential
     public byte[] PublicKey { get; init; } = [];
     public long SignCount { get; init; }
     public Guid AaGuid { get; init; }
+    public string? Name { get; init; }
     public DateTime CreatedAtUtc { get; init; }
 }

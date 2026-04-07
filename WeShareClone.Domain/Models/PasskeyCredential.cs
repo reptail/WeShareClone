@@ -7,5 +7,6 @@ public record PasskeyCredential(
     byte[] PublicKey,
     long SignCount,
     Guid AaGuid,
+    string? Name,
     DateTime CreatedAtUtc
 );

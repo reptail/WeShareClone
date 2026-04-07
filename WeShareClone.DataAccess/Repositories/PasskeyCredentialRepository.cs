@@ -49,6 +49,16 @@ public class PasskeyCredentialRepository(Func<SqlConnection> connectionFactory) 
         );
     }
 
+    public async Task<PasskeyCredential?> UpdateNameAsync(int id, int userId, string? name)
+    {
+        using SqlConnection connection = connectionFactory();
+        DbPasskeyCredential? row = await connection.QueryFirstOrDefaultAsync<DbPasskeyCredential>(
+            sql: SqlScripts.UpdatePasskeyName,
+            param: new { Id = id, UserId = userId, Name = name }
+        );
+        return row?.ToDomain();
+    }
+
     public async Task DeleteByIdAsync(int id, int userId)
     {
         using SqlConnection connection = connectionFactory();
